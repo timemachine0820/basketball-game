@@ -8,6 +8,7 @@ const leagueRoutes = require('./routes/league');
 const eliteRoutes = require('./routes/elite');
 const pvpRoutes = require('./routes/pvp');
 const achievementRoutes = require('./routes/achievement');
+const adminRoutes = require('./routes/admin');
 
 const PORT = process.env.PORT || 3000;
 
@@ -64,6 +65,7 @@ async function start() {
   app.use('/api/elite', eliteRoutes);
   app.use('/api/pvp', pvpRoutes);
   app.use('/api/achievement', achievementRoutes);
+  app.use('/api/admin', adminRoutes);
 
   // 根路径重定向到登录页
   app.get('/', (req, res) => {

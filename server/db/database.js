@@ -140,6 +140,21 @@ function createLeagueTables() {
       settle_time INTEGER NOT NULL
     )
   `);
+
+  // 管理员账号表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL
+    )
+  `);
+
+  // 初始化默认管理员账号（admin/admin123）
+  const adminResult = db.exec("SELECT admin_id FROM admin_users WHERE username = 'admin'");
+  if (adminResult.length === 0 || adminResult[0].values.length === 0) {
+    db.run("INSERT INTO admin_users (username, password) VALUES (?, ?)", ['admin', 'admin123']);
+  }
 }
 
 // 初始化联赛+精英预设AI队伍（幂等：跳过已存在的tier）
