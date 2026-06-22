@@ -376,7 +376,7 @@
     // 导航
     document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
     document.getElementById('navCards').addEventListener('click', () => { window.location.href = 'cards.html'; });
-    document.getElementById('navBattle').addEventListener('click', () => { window.location.href = 'train.html'; });
+    document.getElementById('navBattle').addEventListener('click', () => { window.location.href = 'pvp.html'; });
     document.getElementById('navDraw').addEventListener('click', () => { window.location.href = 'draw.html'; });
 
     // 角色基础属性
@@ -503,7 +503,7 @@
 
     document.getElementById('btnBattle').addEventListener('click', () => {
       if (!deck[1] || !deck[2] || !deck[3]) { showToast('请先填满三个槽位'); return; }
-      window.location.href = 'train.html';
+      window.location.href = 'pvp.html';
     });
 
     // ===== 持有卡牌筛选 =====

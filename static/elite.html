@@ -229,7 +229,7 @@
           <div class="opponent-icon">${o.label.charAt(o.label.length - 1)}</div>
           <div class="opponent-info">
             <div class="opponent-name">${o.label}</div>
-            <div class="opponent-reward">胜: 金币${RESOURCE_CONFIG.eliteGoldReward} 碎片${RESOURCE_CONFIG.eliteShardReward} 钻石${RESOURCE_CONFIG.eliteDiamondReward}</div>
+            <div class="opponent-reward">胜: 金币${o.reward.gold} 碎片${o.reward.shard} 钻石${o.reward.diamond}</div>
           </div>
           <div class="opponent-remain${remainCls}">${o.remaining}/${o.dailyLimit}</div>
         </div>`;

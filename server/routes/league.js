@@ -60,12 +60,14 @@ router.get('/tiers', authCheck, (req, res) => {
       roster = JSON.parse(teamResult[0].values[0][0]);
     }
 
+    const rewards = LEAGUE_REWARDS[tier.tier] || { shard: 0, diamond: 0 };
     return {
       tier: tier.tier,
       label: tier.label,
       dailyLimit: tier.dailyLimit,
       remaining: Math.max(0, tier.dailyLimit - usedCount),
-      roster
+      roster,
+      reward: { shard: rewards.shard, diamond: rewards.diamond }
     };
   });
 

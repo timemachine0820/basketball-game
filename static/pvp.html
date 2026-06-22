@@ -780,7 +780,7 @@
       if (res.data.myRank) {
         document.getElementById('myRankLabel').textContent = res.data.myRank.label;
         document.getElementById('myRankLabel').style.background = res.data.myRank.color;
-        document.getElementById('myRankPoints').textContent = res.data.myRank.points + '分';
+        document.getElementById('myRankPoints').textContent = res.data.myPoints + '分';
       }
       if (res.data.rankedRemaining !== undefined) {
         document.getElementById('rankedRemainingInfo').textContent = `每日10次·剩余${res.data.rankedRemaining}次`;
@@ -798,8 +798,10 @@
         }
       }
 
-      // 冷却状态：仅在非战斗触发时使用服务端冷却值
-      if (!pvpCooldownActive) {
+      if (currentMode === 'casual') {
+        document.getElementById('cooldownBar').style.display = 'none';
+        cooldownRemain = 0;
+      } else if (!pvpCooldownActive) {
         cooldownRemain = res.data.cooldownRemain || 0;
         if (cooldownRemain > 0) {
           startCooldownTimer(cooldownRemain);

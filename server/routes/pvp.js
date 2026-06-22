@@ -85,17 +85,18 @@ router.get('/opponents', authCheck, (req, res) => {
     return res.json({ code: 1, msg: '阵容未填满，无法进行PVP' });
   }
 
-  // 读取冷却状态
-  const cooldownResult = db.exec(
-    "SELECT last_pvp_time FROM players WHERE player_id = ?",
-    [req.playerId]
-  );
   let cooldownRemain = 0;
-  if (cooldownResult.length > 0 && cooldownResult[0].values.length > 0) {
-    const lastTime = cooldownResult[0].values[0][0] || 0;
-    const elapsed = Date.now() - lastTime;
-    if (elapsed < PVP_COOLDOWN_MS) {
-      cooldownRemain = Math.ceil((PVP_COOLDOWN_MS - elapsed) / 1000);
+  if (mode === 'ranked') {
+    const cooldownResult = db.exec(
+      "SELECT last_pvp_time FROM players WHERE player_id = ?",
+      [req.playerId]
+    );
+    if (cooldownResult.length > 0 && cooldownResult[0].values.length > 0) {
+      const lastTime = cooldownResult[0].values[0][0] || 0;
+      const elapsed = Date.now() - lastTime;
+      if (elapsed < PVP_COOLDOWN_MS) {
+        cooldownRemain = Math.ceil((PVP_COOLDOWN_MS - elapsed) / 1000);
+      }
     }
   }
 
@@ -110,13 +111,15 @@ router.get('/opponents', authCheck, (req, res) => {
     [req.playerId]
   );
 
+  const mySeasonResult = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [req.playerId]);
+  const myPointsForMatch = (mySeasonResult.length > 0 && mySeasonResult[0].values.length > 0) ? mySeasonResult[0].values[0][0] : 0;
+
   const opponents = [];
   if (candidatesResult.length > 0) {
     for (const row of candidatesResult[0].values) {
       const pid = row[0];
       const nickname = row[1];
 
-      // 读取对手阵容卡牌
       const dResult = db.exec(
         "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
         [pid]
@@ -136,7 +139,6 @@ router.get('/opponents', authCheck, (req, res) => {
         card_uid: r[0], pos: r[1], grade: r[2], role_name: r[3], star: r[4]
       }));
 
-      // 计算对手战力用于展示
       const attrs = calcPlayerTeamAttrs(cards);
       const power = calcTeamPower(attrs);
 
@@ -150,9 +152,18 @@ router.get('/opponents', authCheck, (req, res) => {
         cards,
         teamPower: Math.round(power),
         rankLabel: oppRank.label,
-        rankColor: oppRank.color
+        rankColor: oppRank.color,
+        seasonPoints: oppPoints
       });
     }
+  }
+
+  let filteredOpponents = opponents;
+  if (mode === 'ranked' && opponents.length > 3) {
+    filteredOpponents = opponents
+      .map(o => ({ ...o, scoreDiff: Math.abs((o.seasonPoints || 0) - myPointsForMatch) }))
+      .sort((a, b) => a.scoreDiff - b.scoreDiff)
+      .slice(0, 5);
   }
 
   // 读取玩家赛季积分
@@ -174,7 +185,7 @@ router.get('/opponents', authCheck, (req, res) => {
   res.json({
     code: 0,
     data: {
-      opponents,
+      opponents: filteredOpponents,
       cooldownRemain,
       myPoints,
       myRank,

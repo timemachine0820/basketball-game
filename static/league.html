@@ -228,7 +228,7 @@
           <div class="tier-icon tier-${t.tier}">${t.label.charAt(0)}</div>
           <div class="tier-info">
             <div class="tier-name">${t.label}</div>
-            <div class="tier-reward">胜: 碎片+${LEAGUE_REWARDS[t.tier].shard} 钻石+${LEAGUE_REWARDS[t.tier].diamond}</div>
+            <div class="tier-reward">胜: 碎片+${t.reward.shard} 钻石+${t.reward.diamond}</div>
           </div>
           <div class="tier-remain${remainCls}">${t.remaining}/${t.dailyLimit}</div>
         </div>`;

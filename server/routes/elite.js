@@ -57,7 +57,12 @@ router.get('/opponents', authCheck, (req, res) => {
       label: tier.label,
       dailyLimit: tier.dailyLimit,
       remaining: Math.max(0, tier.dailyLimit - usedCount),
-      roster
+      roster,
+      reward: {
+        gold: RESOURCE_CONFIG.eliteGoldReward,
+        shard: RESOURCE_CONFIG.eliteShardReward,
+        diamond: RESOURCE_CONFIG.eliteDiamondReward
+      }
     };
   });
 
