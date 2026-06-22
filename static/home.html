@@ -241,9 +241,11 @@
 
       const seasonRes = await API.get('/api/player/season');
       if (seasonRes.code === 0) {
-        const rank = getRankTier(seasonRes.data.season_points);
+        const points = seasonRes.data.season_points;
+        const rank = getRankTier(points);
+        const tierProgress = points - rank.minPoints;
         const rankEl = document.getElementById('homeRankTier');
-        rankEl.textContent = rank.label;
+        rankEl.textContent = rank.label + ' ' + tierProgress + '/100';
         rankEl.style.background = rank.color;
         rankEl.style.color = '#fff';
         document.getElementById('seasonBar').style.display = 'flex';

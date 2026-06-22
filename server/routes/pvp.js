@@ -423,10 +423,12 @@ router.post('/battle', authCheck, (req, res) => {
     ? myPlayerInfo[0].values[0][0] : 0;
 
   const defNicknameForRes = db.exec(
-    "SELECT nickname FROM players WHERE player_id = ?", [defPid]
+    "SELECT nickname, signature FROM players WHERE player_id = ?", [defPid]
   );
   const defNickname = (defNicknameForRes.length > 0 && defNicknameForRes[0].values.length > 0)
     ? defNicknameForRes[0].values[0][0] : '未知';
+  const defSignature = (defNicknameForRes.length > 0 && defNicknameForRes[0].values.length > 0)
+    ? (defNicknameForRes[0].values[0][1] || '') : '';
 
   saveDatabase();
 
@@ -446,6 +448,7 @@ router.post('/battle', authCheck, (req, res) => {
         name: c.role_name, pos: c.pos, grade: c.grade, star: c.star, ...defPlayers[i]
       })),
       defenderNickname: defNickname,
+      defenderSignature: defSignature,
       updatedPoints,
       updatedDiamond
     }
@@ -629,8 +632,9 @@ router.post('/ranked-match', authCheck, (req, res) => {
   const myPlayerInfo = db.exec("SELECT diamond FROM players WHERE player_id = ?", [req.playerId]);
   const updatedDiamond = (myPlayerInfo.length > 0 && myPlayerInfo[0].values.length > 0) ? myPlayerInfo[0].values[0][0] : 0;
 
-  const defNicknameResult = db.exec("SELECT nickname FROM players WHERE player_id = ?", [defPid]);
+  const defNicknameResult = db.exec("SELECT nickname, signature FROM players WHERE player_id = ?", [defPid]);
   const defNickname = (defNicknameResult.length > 0 && defNicknameResult[0].values.length > 0) ? defNicknameResult[0].values[0][0] : '未知';
+  const defSignature = (defNicknameResult.length > 0 && defNicknameResult[0].values.length > 0) ? (defNicknameResult[0].values[0][1] || '') : '';
 
   saveDatabase();
 
@@ -646,6 +650,7 @@ router.post('/ranked-match', authCheck, (req, res) => {
       myCards: myCards.map((c, i) => ({ name: c.role_name, pos: c.pos, grade: c.grade, star: c.star, ...attPlayers[i] })),
       defCards: defCards.map((c, i) => ({ name: c.role_name, pos: c.pos, grade: c.grade, star: c.star, ...defPlayers[i] })),
       defenderNickname: defNickname,
+      defenderSignature: defSignature,
       updatedPoints,
       updatedDiamond
     }

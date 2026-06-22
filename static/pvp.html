@@ -537,7 +537,7 @@
 
     <!-- 冷却提示 -->
     <div class="pvp-cooldown-bar" id="cooldownBar" style="display:none;"></div>
-      <div style="text-align:center;font-size:0.6rem;color:#ff9800;margin-bottom:0.4rem;" id="pvpDailyRemain"></div>
+      <div style="display:none;" id="pvpDailyRemain"></div>
 
     <!-- 每日MVP展示 -->
     <div class="daily-mvp-bar" id="dailyMvpBar" style="display:none;">
@@ -716,9 +716,12 @@
     let rankedMatching = false;
 
     function showResult(data) {
-      document.getElementById('resultTitle').innerHTML = data.isWin
+      const opponentLabel = data.opponentName
+        ? `<div style="font-size:0.8rem;color:#e0e0e0;margin-bottom:0.2rem;">vs ${data.opponentName}${data.opponentSignature ? `<span style="font-size:0.6rem;color:#aaa;margin-left:0.3rem;">${data.opponentSignature}</span>` : ''}</div>`
+        : '';
+      document.getElementById('resultTitle').innerHTML = (data.isWin
         ? '<div class="result-win">胜 利!</div>'
-        : '<div class="result-lose">落 败</div>';
+        : '<div class="result-lose">落 败</div>') + opponentLabel;
       document.getElementById('resultScore').textContent = data.myScore + ' : ' + data.oppScore + ' | ' + (data.mode === 'ranked' ? '排位赛' : '娱乐赛');
 
       if (data.isWin) {
@@ -767,6 +770,7 @@
           myCards: data.myCards,
           oppCards: data.defCards,
           opponentName: data.defenderNickname,
+          opponentSignature: data.defenderSignature,
           battleTime: Date.now(),
           pointChange: data.pointChange,
           diamondReward: data.diamondReward,
@@ -868,10 +872,11 @@
       // document.getElementById('myPoints').textContent = res.data.myPoints; // 赛季积分板块已隐藏
 
       if (res.data.myRank) {
-        document.getElementById('myRankLabel').textContent = res.data.myRank.label;
-        document.getElementById('myRankLabel').style.background = res.data.myRank.color;
-        document.getElementById('myRankPoints').textContent = res.data.myPoints + '分';
-      }
+          document.getElementById('myRankLabel').textContent = res.data.myRank.label;
+          document.getElementById('myRankLabel').style.background = res.data.myRank.color;
+          const tierProgress = res.data.myPoints - res.data.myRank.minPoints;
+          document.getElementById('myRankPoints').textContent = tierProgress + '/100分';
+        }
       if (res.data.rankedRemaining !== undefined) {
         document.getElementById('rankedRemainingInfo').textContent = `每日10次·剩余${res.data.rankedRemaining}次`;
       }
@@ -985,35 +990,26 @@
 
       const data = res.data;
 
-      // 更新积分
-      // document.getElementById('myPoints').textContent = data.updatedPoints; // Removed due to missing element
-
-      // 启动冷却（5秒）- 标记为战斗触发
-      pvpCooldownActive = true;
-      startCooldownTimer(5);
-
-      // 渲染结果弹窗
-      document.getElementById('resultTitle').innerHTML = data.win
-        ? '<div class="result-win">胜 利!</div>'
-        : '<div class="result-lose">落 败</div>';
-      document.getElementById('resultScore').textContent = data.attScore + ' : ' + data.defScore + ' | ' + (currentMode === 'ranked' ? '排位赛' : '娱乐赛');
-
-      if (data.win) {
-        document.getElementById('resultReward').innerHTML =
-          '<div class="result-reward-label">赛季积分</div>' +
-          '<div class="result-reward-values">+' + data.pointChange + ' 积分  +' + data.diamondReward + ' 钻石</div>';
-      } else {
-        document.getElementById('resultReward').innerHTML =
-          '<div class="result-reward-label" style="color:#888;">落败不扣积分</div>';
+      if (currentMode === 'ranked') {
+        pvpCooldownActive = true;
+        startCooldownTimer(5);
       }
 
-      if (data.pointChange !== 0) {
-        showToast(currentMode === 'ranked' ? (data.win ? `+${data.pointChange}排位分` : `${data.pointChange}排位分`) : '');
-      }
-
-      document.getElementById('myStatsBody').innerHTML = data.myCards.map(renderStatsRow).join('');
-      document.getElementById('defStatsBody').innerHTML = data.defCards.map(renderStatsRow).join('');
-      document.getElementById('resultMask').style.display = 'flex';
+      showResult({
+        mode: currentMode,
+        isWin: data.win,
+        myScore: data.attScore,
+        oppScore: data.defScore,
+        myCards: data.myCards,
+        oppCards: data.defCards,
+        opponentName: data.defenderNickname,
+        opponentSignature: data.defenderSignature,
+        battleTime: Date.now(),
+        pointChange: data.pointChange,
+        diamondReward: data.diamondReward,
+        updatedPoints: data.updatedPoints,
+        updatedDiamond: data.updatedDiamond
+      });
     }
 
     function renderStatsRow(player) {
