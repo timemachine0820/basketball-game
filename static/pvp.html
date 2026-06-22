@@ -529,8 +529,8 @@
   </div>
 
   <div class="home-content" id="mainContent">
-    <!-- 赛季积分 -->
-    <div class="pvp-points-bar">
+    <!-- 赛季积分（隐藏） -->
+    <div class="pvp-points-bar" style="display:none;">
       <span class="pvp-points-label">赛季积分</span>
       <span class="pvp-points-value" id="myPoints">0</span>
     </div>
@@ -583,16 +583,16 @@
         <div id="myTeamCards"></div>
       </div>
 
-      <div class="pixel-border" style="padding:0.4rem;margin-bottom:0.5rem;display:none;" id="myRankInfo">
+      <div class="pixel-border" style="padding:0.4rem;margin-bottom:0.5rem;" id="myRankInfo">
         <span style="font-size:0.7rem;color:#888;">当前段位：</span>
         <span id="myRankLabel" class="rank-badge" style="background:#7a7a7a;color:#fff;">-</span>
         <span style="font-size:0.7rem;color:#aaa;margin-left:0.3rem;" id="myRankPoints">0分</span>
       </div>
 
       <!-- 排位模式：自动匹配 -->
-      <div id="rankedMatchPanel" style="display:none;text-align:center;padding:1rem 0;">
+      <div id="rankedMatchPanel" style="display:none;text-align:center;padding:1rem 0.5rem;">
         <div style="font-size:0.8rem;color:#aaa;margin-bottom:0.8rem;">系统将自动匹配段位相近的对手</div>
-        <button class="pixel-btn primary" style="width:80%;font-size:1rem;padding:0.8rem;" onclick="startRankedMatch()">开始排位</button>
+        <button class="pixel-btn primary" style="width:100%;font-size:1rem;padding:0.8rem 1rem;" onclick="startRankedMatch()">开始排位</button>
       </div>
 
       <!-- 娱乐模式：手动选对手 -->
@@ -714,6 +714,30 @@
     }
 
     let rankedMatching = false;
+
+    function showResult(data) {
+      document.getElementById('resultTitle').innerHTML = data.isWin
+        ? '<div class="result-win">胜 利!</div>'
+        : '<div class="result-lose">落 败</div>';
+      document.getElementById('resultScore').textContent = data.myScore + ' : ' + data.oppScore + ' | ' + (data.mode === 'ranked' ? '排位赛' : '娱乐赛');
+
+      if (data.isWin) {
+        document.getElementById('resultReward').innerHTML =
+          '<div class="result-reward-label">赛季积分</div>' +
+          '<div class="result-reward-values">+' + data.pointChange + ' 积分  +' + data.diamondReward + ' 钻石</div>';
+      } else {
+        document.getElementById('resultReward').innerHTML =
+          '<div class="result-reward-label" style="color:#888;">落败不扣积分</div>';
+      }
+
+      if (data.pointChange !== 0) {
+        showToast(data.mode === 'ranked' ? (data.isWin ? `+${data.pointChange}排位分` : `${data.pointChange}排位分`) : '');
+      }
+
+      document.getElementById('myStatsBody').innerHTML = data.myCards.map(renderStatsRow).join('');
+      document.getElementById('defStatsBody').innerHTML = data.oppCards.map(renderStatsRow).join('');
+      document.getElementById('resultMask').style.display = 'flex';
+    }
 
     async function startRankedMatch() {
       if (rankedMatching) return;
@@ -841,7 +865,7 @@
         return;
       }
 
-      // document.getElementById('myPoints').textContent = res.data.myPoints; // Removed due to missing element
+      // document.getElementById('myPoints').textContent = res.data.myPoints; // 赛季积分板块已隐藏
 
       if (res.data.myRank) {
         document.getElementById('myRankLabel').textContent = res.data.myRank.label;
