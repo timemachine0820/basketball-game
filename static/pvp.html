@@ -589,12 +589,29 @@
         <span style="font-size:0.7rem;color:#aaa;margin-left:0.3rem;" id="myRankPoints">0分</span>
       </div>
 
-      <!-- 对手列表 -->
-      <div class="panel-title">选择对手</div>
-      <div class="filter-row" style="margin-bottom:0.3rem;">
-        <input type="text" id="searchOpponent" placeholder="搜索昵称..." style="flex:1;background:#1a1a3e;border:2px solid #2a2a4a;color:#e0e0e0;padding:0.3rem 0.5rem;font-size:0.7rem;border-radius:3px;font-family:inherit;">
+      <!-- 排位模式：自动匹配 -->
+      <div id="rankedMatchPanel" style="display:none;text-align:center;padding:1rem 0;">
+        <div style="font-size:0.8rem;color:#aaa;margin-bottom:0.8rem;">系统将自动匹配段位相近的对手</div>
+        <button class="pixel-btn primary" style="width:80%;font-size:1rem;padding:0.8rem;" onclick="startRankedMatch()">开始排位</button>
       </div>
-      <div id="opponentsList" style="max-height:45vh;overflow-y:auto;"></div>
+
+      <!-- 娱乐模式：手动选对手 -->
+      <div id="casualOpponentsPanel">
+        <div class="panel-title">选择对手</div>
+        <div class="filter-row" style="margin-bottom:0.3rem;">
+          <input type="text" id="searchOpponent" placeholder="搜索昵称..." style="flex:1;background:#1a1a3e;border:2px solid #2a2a4a;color:#e0e0e0;padding:0.3rem 0.5rem;font-size:0.7rem;border-radius:3px;font-family:inherit;">
+        </div>
+        <div id="opponentsList" style="max-height:45vh;overflow-y:auto;"></div>
+      </div>
+
+      <!-- 其他对战模式入口 -->
+      <div style="margin-top:0.5rem;">
+        <div class="panel-title">人机挑战</div>
+        <div style="display:flex;gap:0.3rem;">
+          <a href="league.html" class="pixel-btn" style="flex:1;text-align:center;font-size:0.7rem;padding:0.5rem 0.3rem;text-decoration:none;">梯队联赛</a>
+          <a href="elite.html" class="pixel-btn" style="flex:1;text-align:center;font-size:0.7rem;padding:0.5rem 0.3rem;text-decoration:none;">精英挑战</a>
+        </div>
+      </div>
     </div>
 
     <!-- 排行榜面板 -->
@@ -691,8 +708,42 @@
       document.querySelectorAll('.mode-btn').forEach(b => {
         b.classList.toggle('selected', b.dataset.mode === mode);
       });
-      loadOpponents();
+      document.getElementById('rankedMatchPanel').style.display = mode === 'ranked' ? 'block' : 'none';
+      document.getElementById('casualOpponentsPanel').style.display = mode === 'casual' ? 'block' : 'none';
       document.getElementById('rankSection').style.display = mode === 'ranked' ? 'block' : 'none';
+      if (mode === 'casual') {
+        loadOpponents();
+      }
+    }
+
+    async function startRankedMatch() {
+      const powerEl = document.getElementById('myTeamPower');
+      const myPower = powerEl ? parseInt(powerEl.textContent.replace(/\D/g, '')) || 0 : 0;
+
+      const result = await API.post('/api/pvp/ranked-match', {
+        my_power: myPower
+      });
+
+      if (result.code !== 0) {
+        showToast(result.msg);
+        return;
+      }
+
+      const data = result.data;
+      showResult({
+        mode: data.mode,
+        isWin: data.win,
+        myScore: data.attScore,
+        oppScore: data.defScore,
+        myCards: data.myCards,
+        oppCards: data.defCards,
+        opponentName: data.defenderNickname,
+        battleTime: Date.now(),
+        pointChange: data.pointChange,
+        diamondReward: data.diamondReward,
+        updatedPoints: data.updatedPoints,
+        updatedDiamond: data.updatedDiamond
+      });
     }
 
     // 导航

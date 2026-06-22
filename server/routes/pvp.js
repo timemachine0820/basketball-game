@@ -452,6 +452,206 @@ router.post('/battle', authCheck, (req, res) => {
   });
 });
 
+// POST /api/pvp/ranked-match - 排位赛自动匹配对战
+router.post('/ranked-match', authCheck, (req, res) => {
+  const db = getDb();
+  const now = Date.now();
+
+  const cooldownResult = db.exec(
+    "SELECT last_pvp_time FROM players WHERE player_id = ?",
+    [req.playerId]
+  );
+  if (cooldownResult.length > 0 && cooldownResult[0].values.length > 0) {
+    const lastTime = cooldownResult[0].values[0][0] || 0;
+    const elapsed = now - lastTime;
+    if (elapsed < PVP_COOLDOWN_MS) {
+      const remain = Math.ceil((PVP_COOLDOWN_MS - elapsed) / 1000);
+      return res.json({ code: 1, msg: `冷却中，还需${remain}秒` });
+    }
+  }
+
+  const dailyUsed = getPvpDailyCount(db, req.playerId);
+  if (dailyUsed >= RESOURCE_CONFIG.pvpDailyLimit) {
+    return res.json({ code: 1, msg: '今日PVP次数已用完' });
+  }
+
+  const deckResult = db.exec(
+    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    [req.playerId]
+  );
+  if (deckResult.length === 0 || deckResult[0].values.length === 0) {
+    return res.json({ code: 1, msg: '未设置出战阵容' });
+  }
+  const myDeck = deckResult[0].values[0];
+  if (!myDeck[0] || !myDeck[1] || !myDeck[2]) {
+    return res.json({ code: 1, msg: '阵容未填满，无法对战' });
+  }
+
+  const mySeasonResult = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [req.playerId]);
+  const myPoints = (mySeasonResult.length > 0 && mySeasonResult[0].values.length > 0) ? mySeasonResult[0].values[0][0] : 0;
+
+  const candidatesResult = db.exec(
+    `SELECT td.player_id, p.nickname
+     FROM team_deck td
+     JOIN players p ON p.player_id = td.player_id
+     WHERE td.player_id != ?
+       AND td.slot1_card IS NOT NULL AND td.slot2_card IS NOT NULL AND td.slot3_card IS NOT NULL`,
+    [req.playerId]
+  );
+
+  if (candidatesResult.length === 0 || candidatesResult[0].values.length === 0) {
+    return res.json({ code: 1, msg: '暂无可用对手，请稍后再试' });
+  }
+
+  const candidates = candidatesResult[0].values.map(row => {
+    const pid = row[0];
+    const oppSeasonResult = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [pid]);
+    const oppPoints = (oppSeasonResult.length > 0 && oppSeasonResult[0].values.length > 0) ? oppSeasonResult[0].values[0][0] : 0;
+    return { pid, nickname: row[1], points: oppPoints, diff: Math.abs(oppPoints - myPoints) };
+  });
+
+  candidates.sort((a, b) => a.diff - b.diff);
+  const topCandidates = candidates.slice(0, Math.min(5, candidates.length));
+  const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+
+  const myUids = [myDeck[0], myDeck[1], myDeck[2]];
+  const myCardsResult = db.exec(
+    `SELECT card_uid, pos, grade, role_name, star FROM player_cards
+     WHERE player_id = ? AND card_uid IN (${myUids.map(() => '?').join(',')})`,
+    [req.playerId, ...myUids]
+  );
+  if (myCardsResult.length === 0 || myCardsResult[0].values.length !== 3) {
+    return res.json({ code: 1, msg: '阵容卡牌数据异常' });
+  }
+  const myCards = myCardsResult[0].values.map(r => ({
+    card_uid: r[0], pos: r[1], grade: r[2], role_name: r[3], star: r[4]
+  }));
+
+  const defPid = selected.pid;
+  const defDeckResult = db.exec(
+    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    [defPid]
+  );
+  if (defDeckResult.length === 0 || defDeckResult[0].values.length === 0) {
+    return res.json({ code: 1, msg: '对手阵容不存在' });
+  }
+  const defDeck = defDeckResult[0].values[0];
+  const defUids = [defDeck[0], defDeck[1], defDeck[2]];
+  const defCardsResult = db.exec(
+    `SELECT card_uid, pos, grade, role_name, star FROM player_cards
+     WHERE player_id = ? AND card_uid IN (${defUids.map(() => '?').join(',')})`,
+    [defPid, ...defUids]
+  );
+  if (defCardsResult.length === 0 || defCardsResult[0].values.length !== 3) {
+    return res.json({ code: 1, msg: '对手卡牌数据异常' });
+  }
+  const defCards = defCardsResult[0].values.map(r => ({
+    card_uid: r[0], pos: r[1], grade: r[2], role_name: r[3], star: r[4]
+  }));
+
+  const myAttrs = calcPlayerTeamAttrs(myCards);
+  const defAttrs = calcPlayerTeamAttrs(defCards);
+  const { attScore, defScore, attPlayers, defPlayers } = simulateBattle(myAttrs, defAttrs);
+  const isWin = attScore >= defScore;
+
+  const allPlayerStats = [];
+  for (let i = 0; i < 3; i++) {
+    allPlayerStats.push({
+      side: 'attacker', name: myCards[i].role_name, pos: myCards[i].pos,
+      grade: myCards[i].grade, star: myCards[i].star, ...attPlayers[i]
+    });
+  }
+  for (let i = 0; i < 3; i++) {
+    allPlayerStats.push({
+      side: 'defender', name: defCards[i].role_name, pos: defCards[i].pos,
+      grade: defCards[i].grade, star: defCards[i].star, ...defPlayers[i]
+    });
+  }
+
+  let pointChange = 0;
+  let diamondReward = 0;
+  if (isWin) {
+    pointChange = RANKED_WIN_POINTS;
+    diamondReward = RESOURCE_CONFIG.pvpDiamondWin;
+  } else {
+    pointChange = -RANKED_LOSE_POINTS;
+  }
+
+  const winId = isWin ? req.playerId : defPid;
+  db.run(
+    `INSERT INTO match_records (attacker_id, defender_id, match_type, win_id, att_score, def_score, player_stats_json, point_change, create_time)
+     VALUES (?, ?, 'pvp_ranked', ?, ?, ?, ?, ?, ?)`,
+    [req.playerId, defPid, winId, attScore, defScore, JSON.stringify(allPlayerStats), pointChange, now]
+  );
+
+  db.run("UPDATE players SET last_pvp_time = ? WHERE player_id = ?", [now, req.playerId]);
+  incrementPvpDailyCount(db, req.playerId);
+
+  if (isWin) {
+    db.run("UPDATE player_season SET season_points = season_points + ? WHERE player_id = ?", [pointChange, req.playerId]);
+    db.run("UPDATE players SET diamond = diamond + ? WHERE player_id = ?", [diamondReward, req.playerId]);
+    finishAchievement(req.playerId, 'first_pvp_win');
+  } else {
+    const curSeasonResult = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [req.playerId]);
+    const curPoints = (curSeasonResult.length > 0 && curSeasonResult[0].values.length > 0) ? curSeasonResult[0].values[0][0] : 0;
+    const newPoints = Math.max(0, curPoints + pointChange);
+    db.run("UPDATE player_season SET season_points = ? WHERE player_id = ?", [newPoints, req.playerId]);
+  }
+
+  const matchIdResult = db.exec("SELECT last_insert_rowid()");
+  const matchId = (matchIdResult.length > 0 && matchIdResult[0].values.length > 0) ? matchIdResult[0].values[0][0] : 0;
+
+  const attNicknameResult = db.exec("SELECT nickname FROM players WHERE player_id = ?", [req.playerId]);
+  const attNickname = (attNicknameResult.length > 0 && attNicknameResult[0].values.length > 0) ? attNicknameResult[0].values[0][0] : '未知';
+
+  const defSeasonResult = db.exec("SELECT defense_log FROM player_season WHERE player_id = ?", [defPid]);
+  let defenseLogs = [];
+  if (defSeasonResult.length > 0 && defSeasonResult[0].values.length > 0) {
+    const raw = defSeasonResult[0].values[0][0];
+    if (raw) { try { defenseLogs = JSON.parse(raw); } catch (e) { defenseLogs = []; } }
+  }
+  defenseLogs.unshift({
+    match_id: matchId, attacker_id: req.playerId, attacker_name: attNickname,
+    attacker_cards: myCards.map(c => ({ name: c.role_name, pos: c.pos, grade: c.grade, star: c.star })),
+    defender_cards: defCards.map(c => ({ name: c.role_name, pos: c.pos, grade: c.grade, star: c.star })),
+    att_score: attScore, def_score: defScore, result: !isWin ? 'win' : 'lose', time: now
+  });
+  if (defenseLogs.length > MAX_DEFENSE_LOG) defenseLogs = defenseLogs.slice(0, MAX_DEFENSE_LOG);
+
+  const defSeasonExists = db.exec("SELECT 1 FROM player_season WHERE player_id = ?", [defPid]);
+  if (defSeasonExists.length > 0 && defSeasonExists[0].values.length > 0) {
+    db.run("UPDATE player_season SET defense_log = ? WHERE player_id = ?", [JSON.stringify(defenseLogs), defPid]);
+  }
+
+  const myInfo = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [req.playerId]);
+  const updatedPoints = (myInfo.length > 0 && myInfo[0].values.length > 0) ? myInfo[0].values[0][0] : 0;
+
+  const myPlayerInfo = db.exec("SELECT diamond FROM players WHERE player_id = ?", [req.playerId]);
+  const updatedDiamond = (myPlayerInfo.length > 0 && myPlayerInfo[0].values.length > 0) ? myPlayerInfo[0].values[0][0] : 0;
+
+  const defNicknameResult = db.exec("SELECT nickname FROM players WHERE player_id = ?", [defPid]);
+  const defNickname = (defNicknameResult.length > 0 && defNicknameResult[0].values.length > 0) ? defNicknameResult[0].values[0][0] : '未知';
+
+  saveDatabase();
+
+  res.json({
+    code: 0,
+    data: {
+      mode: 'ranked',
+      win: isWin,
+      attScore,
+      defScore,
+      pointChange,
+      diamondReward,
+      myCards: myCards.map((c, i) => ({ name: c.role_name, pos: c.pos, grade: c.grade, star: c.star, ...attPlayers[i] })),
+      defCards: defCards.map((c, i) => ({ name: c.role_name, pos: c.pos, grade: c.grade, star: c.star, ...defPlayers[i] })),
+      defenderNickname: defNickname,
+      updatedPoints,
+      updatedDiamond
+    }
+  });
+});
+
 // GET /api/pvp/leaderboard - 赛季排行榜前20
 router.get('/leaderboard', authCheck, (req, res) => {
   const db = getDb();
@@ -614,7 +814,7 @@ router.get('/daily-stats', authCheck, (req, res) => {
   // 查询今日所有PVP比赛记录
   const result = db.exec(
     `SELECT attacker_id, defender_id, player_stats_json FROM match_records
-     WHERE match_type = 'pvp' AND create_time >= ?`,
+     WHERE match_type IN ('pvp_ranked', 'pvp_casual') AND create_time >= ?`,
     [todayMs]
   );
 
@@ -714,7 +914,7 @@ router.get('/daily-mvp', authCheck, (req, res) => {
   // 今日胜场排行榜（20点前也能看到实时排行）
   const winResult = db.exec(
     `SELECT attacker_id, COUNT(*) as win_count FROM match_records
-     WHERE match_type = 'pvp' AND win_id = attacker_id AND create_time >= ?
+     WHERE match_type IN ('pvp_ranked', 'pvp_casual') AND win_id = attacker_id AND create_time >= ?
      GROUP BY attacker_id ORDER BY win_count DESC LIMIT 10`,
     [todayMs]
   );
@@ -750,7 +950,7 @@ router.post('/settle-mvp', authCheck, (req, res) => {
   // 统计今日每个玩家的PVP胜利次数（作为进攻方获胜）
   const winResult = db.exec(
     `SELECT attacker_id, COUNT(*) as win_count FROM match_records
-     WHERE match_type = 'pvp' AND win_id = attacker_id AND create_time >= ?
+     WHERE match_type IN ('pvp_ranked', 'pvp_casual') AND win_id = attacker_id AND create_time >= ?
      GROUP BY attacker_id ORDER BY win_count DESC LIMIT 1`,
     [todayMs]
   );
