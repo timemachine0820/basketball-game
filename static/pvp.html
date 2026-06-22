@@ -583,7 +583,7 @@
         <div id="myTeamCards"></div>
       </div>
 
-      <div class="pixel-border" style="padding:0.4rem;margin-bottom:0.5rem;" id="myRankInfo">
+      <div class="pixel-border" style="padding:0.4rem;margin-bottom:0.5rem;display:none;" id="myRankInfo">
         <span style="font-size:0.7rem;color:#888;">当前段位：</span>
         <span id="myRankLabel" class="rank-badge" style="background:#7a7a7a;color:#fff;">-</span>
         <span style="font-size:0.7rem;color:#aaa;margin-left:0.3rem;" id="myRankPoints">0分</span>
@@ -615,11 +615,9 @@
     </div>
 
     <!-- 排行榜面板 -->
-    <div id="rankSection" style="display:none;">
     <div class="pvp-section" id="secLeaderboard">
       <div class="panel-title">赛季排行榜 TOP20</div>
       <div id="leaderboardList"></div>
-    </div>
     </div>
 
     <!-- 今日数据面板 -->
@@ -710,41 +708,58 @@
       });
       document.getElementById('rankedMatchPanel').style.display = mode === 'ranked' ? 'block' : 'none';
       document.getElementById('casualOpponentsPanel').style.display = mode === 'casual' ? 'block' : 'none';
-      document.getElementById('rankSection').style.display = mode === 'ranked' ? 'block' : 'none';
       if (mode === 'casual') {
         loadOpponents();
       }
     }
 
+    let rankedMatching = false;
+
     async function startRankedMatch() {
+      if (rankedMatching) return;
+      rankedMatching = true;
+      const btn = document.querySelector('#rankedMatchPanel .pixel-btn');
+      if (btn) { btn.disabled = true; btn.textContent = '匹配中...'; }
+
       const powerEl = document.getElementById('myTeamPower');
       const myPower = powerEl ? parseInt(powerEl.textContent.replace(/\D/g, '')) || 0 : 0;
 
-      const result = await API.post('/api/pvp/ranked-match', {
-        my_power: myPower
-      });
+      try {
+        const result = await API.post('/api/pvp/ranked-match', {
+          my_power: myPower
+        });
 
-      if (result.code !== 0) {
-        showToast(result.msg);
-        return;
+        if (result.code !== 0) {
+          showToast(result.msg);
+          return;
+        }
+
+        const data = result.data;
+        showResult({
+          mode: data.mode,
+          isWin: data.win,
+          myScore: data.attScore,
+          oppScore: data.defScore,
+          myCards: data.myCards,
+          oppCards: data.defCards,
+          opponentName: data.defenderNickname,
+          battleTime: Date.now(),
+          pointChange: data.pointChange,
+          diamondReward: data.diamondReward,
+          updatedPoints: data.updatedPoints,
+          updatedDiamond: data.updatedDiamond
+        });
+      } finally {
+        rankedMatching = false;
+        if (btn) { btn.disabled = false; btn.textContent = '开始排位'; }
       }
-
-      const data = result.data;
-      showResult({
-        mode: data.mode,
-        isWin: data.win,
-        myScore: data.attScore,
-        oppScore: data.defScore,
-        myCards: data.myCards,
-        oppCards: data.defCards,
-        opponentName: data.defenderNickname,
-        battleTime: Date.now(),
-        pointChange: data.pointChange,
-        diamondReward: data.diamondReward,
-        updatedPoints: data.updatedPoints,
-        updatedDiamond: data.updatedDiamond
-      });
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        loadPage();
+      }
+    });
 
     // 导航
     document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
@@ -826,7 +841,7 @@
         return;
       }
 
-      document.getElementById('myPoints').textContent = res.data.myPoints;
+      // document.getElementById('myPoints').textContent = res.data.myPoints; // Removed due to missing element
 
       if (res.data.myRank) {
         document.getElementById('myRankLabel').textContent = res.data.myRank.label;
@@ -947,7 +962,7 @@
       const data = res.data;
 
       // 更新积分
-      document.getElementById('myPoints').textContent = data.updatedPoints;
+      // document.getElementById('myPoints').textContent = data.updatedPoints; // Removed due to missing element
 
       // 启动冷却（5秒）- 标记为战斗触发
       pvpCooldownActive = true;
@@ -1011,26 +1026,37 @@
 
     // 排行榜
     async function loadLeaderboard() {
-      const res = await API.get('/api/pvp/leaderboard');
-      if (res.code !== 0) return;
-
-      const list = res.data.list || [];
       const el = document.getElementById('leaderboardList');
+      el.innerHTML = '<div class="loading-hint">加载中...</div>';
 
-      if (list.length === 0) {
-        el.innerHTML = '<div class="empty-hint">暂无排行数据</div>';
-        return;
+      try {
+        const res = await API.get('/api/pvp/leaderboard');
+        if (res.code !== 0) {
+          el.innerHTML = '<div class="empty-hint">加载失败，请稍后重试</div>';
+          return;
+        }
+
+        const list = res.data.list || [];
+        if (list.length === 0) {
+          el.innerHTML = '<div class="empty-hint">暂无排行数据</div>';
+          return;
+        }
+
+        el.innerHTML = list.map(item => {
+          const rankClass = item.rank <= 3 ? 'top3' : '';
+          const rankText = item.rank <= 3 ? ['🥇', '🥈', '🥉'][item.rank - 1] : item.rank;
+          const rankBadge = item.rankLabel
+            ? `<span class="rank-badge" style="background:${item.rankColor};color:#fff;font-size:0.55rem;padding:0.05rem 0.3rem;border-radius:2px;">${item.rankLabel}</span>`
+            : '';
+          return `<div class="leaderboard-item">
+            <span class="lb-rank ${rankClass}">${rankText}</span>
+            <span class="lb-name">${item.nickname}${item.signature ? `<span style="font-size:0.55rem;color:#aaa;margin-left:0.2rem;">${item.signature}</span>` : ''}</span>
+            <span class="lb-right">${rankBadge}<span class="lb-points">${item.points}分</span></span>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        el.innerHTML = '<div class="empty-hint">网络异常，请检查连接</div>';
       }
-
-      el.innerHTML = list.map(item => {
-        const rankClass = item.rank <= 3 ? 'top3' : '';
-        const rankText = item.rank <= 3 ? ['🥇', '🥈', '🥉'][item.rank - 1] : item.rank;
-        return `<div class="leaderboard-item">
-          <span class="lb-rank ${rankClass}">${rankText}</span>
-          <span class="lb-name">${item.nickname}</span>
-          <span class="lb-points">${item.points} 分</span>
-        </div>`;
-      }).join('');
     }
 
     // 对战日志
