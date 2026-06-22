@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>巢湖篮球经理 - 抽卡</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <div class="home-header">
+    <span class="home-title">抽卡</span>
+    <span class="home-nickname" id="nicknameDisplay">加载中...</span>
+  </div>
+
+  <div class="home-content">
+
+    <!-- 资源概览 -->
+    <div class="draw-resource-bar pixel-border">
+      <span>金币: <b id="valGold">--</b></span>
+      <span>钻石: <b id="valDiamond">--</b></span>
+      <span>免费: <b id="valFreeDraws">--</b></span>
+    </div>
+
+    <!-- 卡池选择 -->
+    <div class="pool-tabs">
+      <div class="pool-tab active" data-pool="normal">普通金币池</div>
+      <div class="pool-tab" data-pool="premium">高级钻石池</div>
+    </div>
+
+    <!-- 概率说明 -->
+    <div class="pool-info pixel-border" id="poolInfo">
+      B 67% / A 30% / S 3%
+    </div>
+
+    <!-- 抽卡按钮 -->
+    <div class="draw-btn-group">
+      <button class="pixel-btn primary draw-btn" id="btnSingle">
+        单抽<span class="draw-cost" id="costSingle">100金币</span>
+      </button>
+      <button class="pixel-btn primary draw-btn" id="btnTen">
+        十连<span class="draw-cost" id="costTen">1000金币</span>
+      </button>
+    </div>
+
+    <!-- 抽卡结果 -->
+    <div id="drawResult" style="display:none;">
+      <div class="panel-title">抽卡结果</div>
+      <div class="draw-result-list" id="drawResultList"></div>
+    </div>
+
+    <!-- 抽卡统计 -->
+    <div class="panel-title">抽卡统计</div>
+    <div class="stat-grid">
+      <div class="stat-item pixel-border">
+        <div class="stat-value" id="valTotalDraw">--</div>
+        <div class="stat-label">总抽卡数</div>
+      </div>
+      <div class="stat-item pixel-border">
+        <div class="stat-value grade-S" id="valTotalS">--</div>
+        <div class="stat-label">S卡出货</div>
+      </div>
+      <div class="stat-item pixel-border">
+        <div class="stat-value" id="valPityCount">--</div>
+        <div class="stat-label">距保底</div>
+      </div>
+    </div>
+
+    <!-- 近10抽记录 -->
+    <div class="panel-title">近10抽记录</div>
+    <div id="drawHistory" class="draw-history">
+      <div class="draw-history-empty">暂无抽卡记录</div>
+    </div>
+
+  </div>
+
+  <!-- 底部导航栏 -->
+  <div class="bottom-nav">
+    <div class="nav-item" id="navHome">
+      <span class="nav-icon">&#9733;</span>
+      <span>主页</span>
+    </div>
+    <div class="nav-item" id="navCards">
+      <span class="nav-icon">&#9827;</span>
+      <span>卡牌</span>
+    </div>
+    <div class="nav-item" id="navDeck">
+      <span class="nav-icon">&#9812;</span>
+      <span>阵容</span>
+    </div>
+    <div class="nav-item" id="navBattle">
+      <span class="nav-icon">&#9876;</span>
+      <span>对战</span>
+    </div>
+    <div class="nav-item active">
+      <span class="nav-icon">&#9830;</span>
+      <span>抽卡</span>
+    </div>
+  </div>
+
+  <div style="height: 4.5rem;"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    if (!localStorage.getItem('player_id')) {
+      window.location.href = 'index.html';
+    }
+
+    // 导航链接
+    document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
+    document.getElementById('navCards').addEventListener('click', () => { window.location.href = 'cards.html'; });
+    document.getElementById('navDeck').addEventListener('click', () => { window.location.href = 'lineup.html'; });
+    document.getElementById('navBattle').addEventListener('click', () => { window.location.href = 'train.html'; });
+
+    const POOL_RATES = {
+      normal: 'B 67% / A 30% / S 3%',
+      premium: 'B 40% / A 48% / S 12%'
+    };
+    const POOL_COST = {
+      normal: { single: '100金币', ten: '1000金币' },
+      premium: { single: '10钻石', ten: '100钻石' }
+    };
+
+    let currentPool = 'normal';
+    let isDrawing = false;
+
+    // 卡池切换
+    document.querySelectorAll('.pool-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        currentPool = tab.dataset.pool;
+        document.querySelectorAll('.pool-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('poolInfo').textContent = POOL_RATES[currentPool];
+        document.getElementById('costSingle').textContent = POOL_COST[currentPool].single;
+        document.getElementById('costTen').textContent = POOL_COST[currentPool].ten;
+      });
+    });
+
+    // 从localStorage读取抽卡记录
+    function getDrawHistory() {
+      try {
+        return JSON.parse(localStorage.getItem('draw_history') || '[]');
+      } catch { return []; }
+    }
+
+    function saveDrawHistory(list) {
+      // 只保留最近10条
+      localStorage.setItem('draw_history', JSON.stringify(list.slice(-10)));
+    }
+
+    // 渲染近10抽记录
+    function renderHistory() {
+      const list = getDrawHistory();
+      const el = document.getElementById('drawHistory');
+      if (list.length === 0) {
+        el.innerHTML = '<div class="draw-history-empty">暂无抽卡记录</div>';
+        return;
+      }
+      // 倒序展示（最新在前）
+      el.innerHTML = list.slice().reverse().map(item => {
+        const color = gradeColor(item.grade);
+        const sClass = item.grade === 'S' ? ' draw-s-flash' : '';
+        return `<div class="draw-history-item pixel-border${sClass}">
+          <span class="grade-tag grade-${item.grade}">${item.grade}</span>
+          <span style="color:${color};margin-left:0.4rem;">${item.role_name}</span>
+          <span style="color:#888;margin-left:auto;font-size:0.65rem;">${item.pos}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // 渲染抽卡结果
+    function renderResults(cards) {
+      const el = document.getElementById('drawResult');
+      const list = document.getElementById('drawResultList');
+      if (!cards || cards.length === 0) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = 'block';
+      list.innerHTML = cards.map(c => {
+        const color = gradeColor(c.grade);
+        const sClass = c.grade === 'S' ? ' draw-s-flash' : '';
+        return `<div class="draw-result-card pixel-border${sClass}">
+          <span class="grade-tag grade-${c.grade}">${c.grade}</span>
+          <span style="color:${color};font-weight:bold;margin-left:0.4rem;">${c.role_name}</span>
+          <span style="color:#888;font-size:0.7rem;margin-left:auto;">${c.pos} ★${c.star}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // 更新统计显示
+    function updateStats(totalDraw, totalS, pityCount) {
+      document.getElementById('valTotalDraw').textContent = formatNumber(totalDraw);
+      document.getElementById('valTotalS').textContent = totalS;
+      document.getElementById('valPityCount').textContent = pityCount != null ? pityCount : '--';
+    }
+
+    // 更新资源显示
+    function updateResources(data) {
+      if (data.gold != null) document.getElementById('valGold').textContent = formatNumber(data.gold);
+      if (data.diamond != null) document.getElementById('valDiamond').textContent = data.diamond;
+      if (data.free_draws != null) document.getElementById('valFreeDraws').textContent = data.free_draws;
+    }
+
+    // 执行抽卡
+    async function doDraw(pool, count) {
+      if (isDrawing) return;
+      isDrawing = true;
+
+      const res = await API.post('/api/player/draw', { pool, count });
+      if (res.code !== 0) {
+        showToast(res.msg || '抽卡失败');
+        isDrawing = false;
+        return;
+      }
+
+      const { cards, remaining, total_draw, total_s } = res.data;
+
+      // 渲染结果
+      renderResults(cards);
+
+      // 更新资源
+      updateResources(remaining);
+      localStorage.setItem('free_draws', remaining.free_draws);
+
+      // 更新统计
+      updateStats(total_draw, total_s, null);
+      localStorage.setItem('total_draw', total_draw);
+      localStorage.setItem('total_s', total_s);
+
+      // 追加记录到localStorage（近10抽）
+      const history = getDrawHistory();
+      cards.forEach(c => history.push({
+        grade: c.grade,
+        role_name: c.role_name,
+        pos: c.pos,
+        time: Date.now()
+      }));
+      saveDrawHistory(history);
+      renderHistory();
+
+      showToast(count === 1 ? '抽卡完成' : '十连完成');
+      isDrawing = false;
+    }
+
+    // 绑定按钮（防抖）
+    const singleDraw = debounce(() => doDraw(currentPool, 1));
+    const tenDraw = debounce(() => doDraw(currentPool, 10));
+    document.getElementById('btnSingle').addEventListener('click', singleDraw);
+    document.getElementById('btnTen').addEventListener('click', tenDraw);
+
+    // 初始加载
+    async function init() {
+      const res = await API.get('/api/player/info');
+      if (res.code !== 0) {
+        showToast(res.msg || '加载失败');
+        return;
+      }
+      document.getElementById('nicknameDisplay').textContent = res.data.nickname;
+      updateResources(res.data);
+      updateStats(res.data.total_draw, res.data.total_s, null);
+      localStorage.setItem('free_draws', res.data.free_draws);
+      localStorage.setItem('total_draw', res.data.total_draw);
+      localStorage.setItem('total_s', res.data.total_s);
+      renderHistory();
+    }
+
+    init();
+  </script>
+</body>
+</html>

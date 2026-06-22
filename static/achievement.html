@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>巢湖篮球经理 - 成就</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .achieve-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.7rem 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+    .achieve-icon {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      background: #2a2a4a;
+      border: 2px solid #4a4a8a;
+    }
+    .achieve-icon.done {
+      background: #3a5a2a;
+      border-color: #6a9a4e;
+    }
+    .achieve-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .achieve-name {
+      font-size: 0.85rem;
+      color: #e0e0e0;
+      font-weight: bold;
+      margin-bottom: 0.15rem;
+    }
+    .achieve-desc {
+      font-size: 0.65rem;
+      color: #888;
+    }
+    .achieve-reward {
+      font-size: 0.6rem;
+      color: #6a9aff;
+      margin-top: 0.1rem;
+    }
+    .achieve-btn {
+      flex-shrink: 0;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.7rem;
+      border: 2px solid #4a4a8a;
+      border-radius: 3px;
+      background: #1a1a2e;
+      color: #888;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .achieve-btn.claimable {
+      background: #3a5a2a;
+      border-color: #6a9a4e;
+      color: #fff;
+    }
+    .achieve-btn.claimable:active {
+      background: #4a7a2e;
+    }
+    .achieve-btn.claimed {
+      background: #1a1a2e;
+      border-color: #4a4a8a;
+      color: #555;
+    }
+    .achieve-progress {
+      font-size: 0.6rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="home-header">
+    <span class="home-title">巢湖篮球经理</span>
+    <span class="home-nickname" id="nicknameDisplay">加载中...</span>
+  </div>
+
+  <div class="home-content">
+    <div class="panel-title">成就列表</div>
+    <div id="achieveList">
+      <div style="text-align:center;color:#666;padding:2rem;">加载中...</div>
+    </div>
+  </div>
+
+  <!-- 底部导航栏 -->
+  <div class="bottom-nav">
+    <div class="nav-item" id="navHome">
+      <span class="nav-icon">&#9733;</span>
+      <span>主页</span>
+    </div>
+    <div class="nav-item" id="navCards">
+      <span class="nav-icon">&#9827;</span>
+      <span>卡牌</span>
+    </div>
+    <div class="nav-item" id="navDeck">
+      <span class="nav-icon">&#9812;</span>
+      <span>阵容</span>
+    </div>
+    <div class="nav-item" id="navBattle">
+      <span class="nav-icon">&#9876;</span>
+      <span>对战</span>
+    </div>
+    <div class="nav-item" id="navDraw">
+      <span class="nav-icon">&#9830;</span>
+      <span>抽卡</span>
+    </div>
+  </div>
+
+  <div style="height: 4.5rem;"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    if (!localStorage.getItem('player_id')) {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
+    document.getElementById('navCards').addEventListener('click', () => { window.location.href = 'cards.html'; });
+    document.getElementById('navDeck').addEventListener('click', () => { window.location.href = 'lineup.html'; });
+    document.getElementById('navBattle').addEventListener('click', () => { window.location.href = 'train.html'; });
+    document.getElementById('navDraw').addEventListener('click', () => { window.location.href = 'draw.html'; });
+
+    const REWARD_LABELS = { diamond: '钻石', free_draws: '抽卡次数' };
+    const ACHIEVE_ICONS = {
+      first_ten_draw: '&#9733;',
+      s_three_star: '&#9830;',
+      first_pvp_win: '&#9876;',
+      gold_league_clear: '&#9812;'
+    };
+
+    function renderList(list) {
+      const container = document.getElementById('achieveList');
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#666;padding:2rem;">暂无成就</div>';
+        return;
+      }
+      container.innerHTML = list.map(ach => {
+        const done = ach.is_finish === 1;
+        const claimed = ach.reward_get === 1;
+        const claimable = done && !claimed;
+        const icon = ACHIEVE_ICONS[ach.key] || '&#9733;';
+        let btnHtml = '';
+        if (claimed) {
+          btnHtml = '<span class="achieve-btn claimed">已领取</span>';
+        } else if (claimable) {
+          btnHtml = '<button class="achieve-btn claimable" data-key="' + ach.key + '">领取</button>';
+        } else {
+          btnHtml = '<span class="achieve-progress">未完成</span>';
+        }
+        return '<div class="achieve-item pixel-border">' +
+          '<div class="achieve-icon' + (done ? ' done' : '') + '">' + icon + '</div>' +
+          '<div class="achieve-info">' +
+            '<div class="achieve-name">' + ach.name + '</div>' +
+            '<div class="achieve-desc">' + ach.desc + '</div>' +
+            '<div class="achieve-reward">奖励: ' + REWARD_LABELS[ach.reward_type] + ' x' + ach.reward_amount + '</div>' +
+          '</div>' +
+          btnHtml +
+        '</div>';
+      }).join('');
+
+      // 绑定领取事件
+      container.querySelectorAll('.claimable').forEach(btn => {
+        btn.addEventListener('click', debounce(async () => {
+          const key = btn.getAttribute('data-key');
+          const res = await API.post('/api/achievement/claim', { key });
+          if (res.code !== 0) {
+            showToast(res.msg || '领取失败');
+            return;
+          }
+          showToast('领取成功 +' + res.data.reward_amount + ' ' + REWARD_LABELS[res.data.reward_type]);
+          loadAchievements();
+        }, 500));
+      });
+    }
+
+    async function loadAchievements() {
+      const res = await API.get('/api/achievement/list');
+      if (res.code !== 0) {
+        showToast(res.msg || '加载失败');
+        return;
+      }
+      renderList(res.data.list);
+    }
+
+    // 昵称显示
+    document.getElementById('nicknameDisplay').textContent = localStorage.getItem('nickname') || '加载中...';
+
+    loadAchievements();
+  </script>
+</body>
+</html>

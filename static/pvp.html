@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>巢湖篮球经理 - 真人PVP</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pvp-points-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.6rem;
+      background: #1a1a3e;
+      border: 2px solid #ff9800;
+      border-radius: 3px;
+      margin-bottom: 0.5rem;
+    }
+    .pvp-points-label {
+      font-size: 0.7rem;
+      color: #ff9800;
+    }
+    .pvp-points-value {
+      font-size: 0.9rem;
+      color: #ffd700;
+      font-weight: bold;
+    }
+    .pvp-cooldown-bar {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #ff5252;
+      padding: 0.3rem 0;
+      margin-bottom: 0.4rem;
+    }
+    .pvp-opponent-card {
+      background: #12122a;
+      border: 2px solid #2a2a4a;
+      border-radius: 3px;
+      padding: 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+    .pvp-opp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.3rem;
+    }
+    .pvp-opp-name {
+      font-size: 0.8rem;
+      color: #ff9800;
+      font-weight: bold;
+    }
+    .pvp-opp-power {
+      font-size: 0.65rem;
+      color: #888;
+    }
+    .pvp-opp-cards {
+      display: flex;
+      gap: 0.2rem;
+      margin-bottom: 0.3rem;
+    }
+    .pvp-opp-card-item {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0.25rem 0.3rem;
+      background: #0a0a1e;
+      border: 1px solid #2a2a4a;
+      border-radius: 2px;
+      font-size: 0.6rem;
+    }
+    .pvp-opp-card-item .grade-tag {
+      margin-right: 0.2rem;
+      flex-shrink: 0;
+      font-size: 0.55rem;
+    }
+    .pvp-opp-card-name {
+      flex: 1;
+      color: #ccc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pvp-opp-card-star {
+      color: #ffd700;
+      font-size: 0.5rem;
+      flex-shrink: 0;
+    }
+    .pvp-challenge-btn {
+      width: 100%;
+      font-size: 0.75rem;
+    }
+    .pvp-tab-bar {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0.5rem;
+    }
+    .pvp-tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.4rem 0;
+      background: #1a1a3e;
+      border: 2px solid #2a2a4a;
+      color: #888;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+    .pvp-tab:first-child {
+      border-radius: 3px 0 0 3px;
+    }
+    .pvp-tab:last-child {
+      border-radius: 0 3px 3px 0;
+    }
+    .pvp-tab.active {
+      background: #2a2a5a;
+      border-color: #ff9800;
+      color: #ff9800;
+    }
+    .pvp-section {
+      display: none;
+    }
+    .pvp-section.active {
+      display: block;
+    }
+    /* 每日MVP展示 */
+    .daily-mvp-bar {
+      background: linear-gradient(135deg, #2a1a00, #1a0a00);
+      border: 2px solid #ffd700;
+      border-radius: 4px;
+      padding: 0.4rem 0.6rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .daily-mvp-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .daily-mvp-badge {
+      background: #ffd700;
+      color: #1a0a00;
+      font-size: 0.55rem;
+      font-weight: bold;
+      padding: 0.1rem 0.3rem;
+      border-radius: 2px;
+      letter-spacing: 0.05rem;
+    }
+    .daily-mvp-name {
+      color: #ffd700;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .daily-mvp-info {
+      color: #aaa;
+      font-size: 0.6rem;
+    }
+    /* 今日数据子标签 */
+    .daily-stats-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0.4rem;
+    }
+    .dstab {
+      flex: 1;
+      text-align: center;
+      padding: 0.3rem 0;
+      background: #0a0a1a;
+      border: 1px solid #2a2a4a;
+      color: #888;
+      font-size: 0.6rem;
+      cursor: pointer;
+    }
+    .dstab:first-child { border-radius: 3px 0 0 3px; }
+    .dstab:last-child { border-radius: 0 3px 3px 0; }
+    .dstab.active {
+      background: #1a1a3e;
+      border-color: #ff9800;
+      color: #ff9800;
+    }
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      padding: 0.35rem 0.5rem;
+      margin-bottom: 0.2rem;
+      background: #12122a;
+      border: 1px solid #2a2a4a;
+      border-radius: 3px;
+    }
+    .lb-rank {
+      width: 1.5rem;
+      font-size: 0.8rem;
+      color: #ff9800;
+      font-weight: bold;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .lb-rank.top3 {
+      color: #ffd700;
+    }
+    .lb-name {
+      flex: 1;
+      font-size: 0.75rem;
+      color: #e0e0e0;
+    }
+    .lb-points {
+      font-size: 0.75rem;
+      color: #ffd700;
+      flex-shrink: 0;
+    }
+    .defense-log-item {
+      padding: 0.4rem 0.5rem;
+      margin-bottom: 0.3rem;
+      background: #12122a;
+      border: 1px solid #2a2a4a;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .dl-summary {
+      display: flex;
+      align-items: center;
+    }
+    .dl-result {
+      width: 2rem;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .dl-result.win { color: #4caf50; }
+    .dl-result.lose { color: #ff5252; }
+    .dl-info {
+      flex: 1;
+      margin-left: 0.3rem;
+    }
+    .dl-attacker {
+      font-size: 0.7rem;
+      color: #e0e0e0;
+    }
+    .dl-score {
+      font-size: 0.65rem;
+      color: #aaa;
+      margin-top: 0.1rem;
+    }
+    .dl-time {
+      font-size: 0.55rem;
+      color: #666;
+      flex-shrink: 0;
+    }
+    .dl-expand-icon {
+      font-size: 0.6rem;
+      color: #666;
+      margin-left: 0.2rem;
+      flex-shrink: 0;
+    }
+    .dl-detail {
+      display: none;
+      margin-top: 0.4rem;
+      padding-top: 0.3rem;
+      border-top: 1px solid #2a2a4a;
+    }
+    .dl-detail.show { display: block; }
+    .dl-teams {
+      display: flex;
+      gap: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .dl-team {
+      flex: 1;
+    }
+    .dl-team-label {
+      font-size: 0.6rem;
+      color: #888;
+      text-align: center;
+      margin-bottom: 0.2rem;
+    }
+    .dl-team-label.att { color: #6a9aff; }
+    .dl-team-label.def { color: #ff5252; }
+    .dl-card-item {
+      display: flex;
+      align-items: center;
+      padding: 0.2rem 0.3rem;
+      margin-bottom: 0.1rem;
+      background: #0a0a1e;
+      border: 1px solid #2a2a4a;
+      border-radius: 2px;
+      font-size: 0.55rem;
+    }
+    .dl-card-item .grade-tag {
+      margin-right: 0.15rem;
+      flex-shrink: 0;
+      font-size: 0.45rem;
+    }
+    .dl-card-name {
+      flex: 1;
+      color: #ccc;
+    }
+    .dl-card-star {
+      color: #ffd700;
+      font-size: 0.45rem;
+      flex-shrink: 0;
+    }
+    .dl-stats-section {
+      margin-top: 0.3rem;
+    }
+    .dl-stats-label {
+      font-size: 0.6rem;
+      color: #ff9800;
+      border-bottom: 1px solid #2a2a4a;
+      padding-bottom: 0.15rem;
+      margin-bottom: 0.2rem;
+    }
+    .dl-stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.55rem;
+    }
+    .dl-stats-table th {
+      color: #888;
+      padding: 0.2rem 0.1rem;
+      text-align: center;
+      border-bottom: 1px solid #2a2a4a;
+      font-weight: normal;
+    }
+    .dl-stats-table td {
+      padding: 0.2rem 0.1rem;
+      text-align: center;
+      color: #ccc;
+      border-bottom: 1px solid #1a1a2e;
+    }
+    .dl-stats-table .player-name-cell {
+      text-align: left;
+      max-width: 3.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .empty-hint {
+      text-align: center;
+      color: #666;
+      font-size: 0.75rem;
+      padding: 1.5rem 0;
+    }
+    .empty-hint a {
+      color: #6a9aff;
+      text-decoration: none;
+    }
+    /* 结果弹窗复用 train.html 样式 */
+    .result-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .result-panel {
+      width: 95%;
+      max-width: 24rem;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .result-header {
+      text-align: center;
+      padding: 0.6rem 0;
+      border-bottom: 2px solid #4a4a8a;
+      margin-bottom: 0.5rem;
+    }
+    .result-win {
+      font-size: 1.4rem;
+      color: #ffd700;
+      font-weight: bold;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .result-lose {
+      font-size: 1.4rem;
+      color: #ff5252;
+      font-weight: bold;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .result-score {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-top: 0.3rem;
+    }
+    .result-reward {
+      text-align: center;
+      padding: 0.4rem;
+      margin-bottom: 0.5rem;
+      border: 1px dashed #4a4a8a;
+      border-radius: 3px;
+    }
+    .result-reward-label {
+      font-size: 0.7rem;
+      color: #888;
+      margin-bottom: 0.2rem;
+    }
+    .result-reward-values {
+      font-size: 0.85rem;
+      color: #ffd700;
+    }
+    .result-section-title {
+      font-size: 0.75rem;
+      color: #ff9800;
+      border-bottom: 1px solid #4a4a8a;
+      padding-bottom: 0.2rem;
+      margin-bottom: 0.3rem;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.65rem;
+      margin-bottom: 0.6rem;
+    }
+    .result-table th {
+      color: #888;
+      padding: 0.25rem 0.15rem;
+      text-align: center;
+      border-bottom: 1px solid #2a2a4a;
+      font-weight: normal;
+    }
+    .result-table td {
+      padding: 0.25rem 0.15rem;
+      text-align: center;
+      color: #e0e0e0;
+      border-bottom: 1px solid #1a1a2e;
+    }
+    .result-table .player-name-cell {
+      text-align: left;
+      max-width: 4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .result-close-btn {
+      margin-top: 0.5rem;
+    }
+    .my-team-section {
+      margin-bottom: 0.5rem;
+    }
+    .battle-team-title {
+      font-size: 0.75rem;
+      color: #6a9aff;
+      text-align: center;
+      margin-bottom: 0.3rem;
+      padding-bottom: 0.2rem;
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .battle-player-item {
+      display: flex;
+      align-items: center;
+      padding: 0.3rem 0.4rem;
+      margin-bottom: 0.15rem;
+      background: #12122a;
+      border: 2px solid #2a2a4a;
+      border-radius: 3px;
+    }
+    .battle-player-item .grade-tag {
+      margin-right: 0.2rem;
+      flex-shrink: 0;
+    }
+    .battle-player-name {
+      flex: 1;
+      font-size: 0.65rem;
+      color: #e0e0e0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .battle-player-pos {
+      font-size: 0.55rem;
+      color: #888;
+      margin-left: 0.2rem;
+      flex-shrink: 0;
+    }
+    .battle-player-stars {
+      font-size: 0.5rem;
+      color: #ffd700;
+      margin-left: 0.2rem;
+      flex-shrink: 0;
+    }
+    .refresh-btn {
+      display: block;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <div class="home-header">
+    <span class="home-title">真人PVP</span>
+    <span class="home-nickname" id="nicknameDisplay">加载中...</span>
+  </div>
+
+  <div class="home-content" id="mainContent">
+    <!-- 赛季积分 -->
+    <div class="pvp-points-bar">
+      <span class="pvp-points-label">赛季积分</span>
+      <span class="pvp-points-value" id="myPoints">0</span>
+    </div>
+
+    <!-- 冷却提示 -->
+    <div class="pvp-cooldown-bar" id="cooldownBar" style="display:none;"></div>
+      <div style="text-align:center;font-size:0.6rem;color:#ff9800;margin-bottom:0.4rem;" id="pvpDailyRemain"></div>
+
+    <!-- 每日MVP展示 -->
+    <div class="daily-mvp-bar" id="dailyMvpBar" style="display:none;">
+      <div class="daily-mvp-inner">
+        <span class="daily-mvp-badge">MVP</span>
+        <span class="daily-mvp-name" id="mvpName"></span>
+        <span class="daily-mvp-info" id="mvpInfo"></span>
+      </div>
+    </div>
+    <!-- 今日胜场排行（20点前展示） -->
+    <div class="daily-mvp-bar" id="dailyWinBar" style="display:none;border-color:#6a9aff;">
+      <div style="font-size:0.65rem;color:#6a9aff;margin-bottom:0.3rem;">今日PVP胜场排行</div>
+      <div id="dailyWinList"></div>
+    </div>
+
+    <!-- Tab 切换 -->
+    <div class="pvp-tab-bar">
+      <div class="pvp-tab active" data-tab="opponents">挑战对手</div>
+      <div class="pvp-tab" data-tab="leaderboard">排行榜</div>
+      <div class="pvp-tab" data-tab="dailystats">今日数据</div>
+      <div class="pvp-tab" data-tab="battlelog">对战日志</div>
+    </div>
+
+    <!-- 挑战对手面板 -->
+    <div class="pvp-section active" id="secOpponents">
+      <!-- 我方阵容 -->
+      <div class="my-team-section">
+        <div class="battle-team-title">我方阵容 <span id="myTeamPower" style="color:#ffd700;font-size:0.65rem;"></span></div>
+        <div id="myTeamCards"></div>
+      </div>
+
+      <!-- 对手列表 -->
+      <div class="panel-title">选择对手</div>
+      <div class="filter-row" style="margin-bottom:0.3rem;">
+        <input type="text" id="searchOpponent" placeholder="搜索昵称..." style="flex:1;background:#1a1a3e;border:2px solid #2a2a4a;color:#e0e0e0;padding:0.3rem 0.5rem;font-size:0.7rem;border-radius:3px;font-family:inherit;">
+      </div>
+      <div id="opponentsList" style="max-height:45vh;overflow-y:auto;"></div>
+    </div>
+
+    <!-- 排行榜面板 -->
+    <div class="pvp-section" id="secLeaderboard">
+      <div class="panel-title">赛季排行榜 TOP20</div>
+      <div id="leaderboardList"></div>
+    </div>
+
+    <!-- 今日数据面板 -->
+    <div class="pvp-section" id="secDailystats">
+      <div class="panel-title">今日单项数据榜</div>
+      <div class="daily-stats-tabs" id="dailyStatsTabs">
+        <span class="dstab active" data-cat="score">得分</span>
+        <span class="dstab" data-cat="rebound">篮板</span>
+        <span class="dstab" data-cat="assist">助攻</span>
+        <span class="dstab" data-cat="steal">抢断</span>
+        <span class="dstab" data-cat="block">盖帽</span>
+      </div>
+      <div id="dailyStatsList"></div>
+    </div>
+
+    <!-- 对战日志面板 -->
+    <div class="pvp-section" id="secBattlelog">
+      <div class="panel-title">对战日志（最近20条）</div>
+      <div id="battleLogList"></div>
+    </div>
+  </div>
+
+  <!-- 底部导航栏 -->
+  <div class="bottom-nav">
+    <div class="nav-item" id="navHome">
+      <span class="nav-icon">&#9733;</span>
+      <span>主页</span>
+    </div>
+    <div class="nav-item" id="navCards">
+      <span class="nav-icon">&#9827;</span>
+      <span>卡牌</span>
+    </div>
+    <div class="nav-item" id="navDeck">
+      <span class="nav-icon">&#9812;</span>
+      <span>阵容</span>
+    </div>
+    <div class="nav-item active">
+      <span class="nav-icon">&#9876;</span>
+      <span>对战</span>
+    </div>
+    <div class="nav-item" id="navDraw">
+      <span class="nav-icon">&#9830;</span>
+      <span>抽卡</span>
+    </div>
+  </div>
+
+  <div style="height: 4.5rem;"></div>
+
+  <!-- 结果弹窗 -->
+  <div class="result-mask" id="resultMask" style="display:none;">
+    <div class="result-panel pixel-border">
+      <div class="result-header">
+        <div id="resultTitle"></div>
+        <div class="result-score" id="resultScore"></div>
+      </div>
+      <div class="result-reward" id="resultReward"></div>
+      <div class="result-section-title">我方数据</div>
+      <table class="result-table">
+        <thead><tr><th>球员</th><th>位置</th><th>得分</th><th>篮板</th><th>助攻</th><th>抢断</th><th>盖帽</th></tr></thead>
+        <tbody id="myStatsBody"></tbody>
+      </table>
+      <div class="result-section-title">对手数据</div>
+      <table class="result-table">
+        <thead><tr><th>球员</th><th>位置</th><th>得分</th><th>篮板</th><th>助攻</th><th>抢断</th><th>盖帽</th></tr></thead>
+        <tbody id="defStatsBody"></tbody>
+      </table>
+      <button class="pixel-btn primary result-close-btn" id="btnResultClose">返回</button>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="/config/game-config.js"></script>
+  <script>
+    if (!localStorage.getItem('player_id')) {
+      window.location.href = 'index.html';
+    }
+
+    let cooldownTimer = null;
+    let cooldownRemain = 0;
+    let pvpCooldownActive = false; // 标记是否由战斗触发的冷却
+
+    // 导航
+    document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
+    document.getElementById('navCards').addEventListener('click', () => { window.location.href = 'cards.html'; });
+    document.getElementById('navDeck').addEventListener('click', () => { window.location.href = 'lineup.html'; });
+    document.getElementById('navDraw').addEventListener('click', () => { window.location.href = 'draw.html'; });
+
+    // Tab 切换
+    document.querySelectorAll('.pvp-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.pvp-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.pvp-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        const target = tab.getAttribute('data-tab');
+        document.getElementById('sec' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active');
+
+        if (target === 'leaderboard') loadLeaderboard();
+        if (target === 'dailystats') loadDailyStats();
+        if (target === 'battlelog') loadBattleLog();
+      });
+    });
+
+    // 加载页面数据
+    async function loadPage() {
+      const infoRes = await API.get('/api/player/info');
+      if (infoRes.code === 0) {
+        document.getElementById('nicknameDisplay').textContent = infoRes.data.nickname;
+      }
+
+      const deckRes = await API.get('/api/player/deck');
+      if (deckRes.code !== 0) {
+        document.getElementById('myTeamCards').innerHTML = '<div class="empty-hint">未设置出战阵容<br>请先 <a href="lineup.html">设置阵容</a></div>';
+        return;
+      }
+      const deck = deckRes.data;
+      if (!deck.slot1_card || !deck.slot2_card || !deck.slot3_card) {
+        document.getElementById('myTeamCards').innerHTML = '<div class="empty-hint">阵容未填满<br>请先 <a href="lineup.html">设置阵容</a></div>';
+        return;
+      }
+
+      const cardsRes = await API.get('/api/player/cards');
+      if (cardsRes.code !== 0) return;
+      const allCards = cardsRes.data || [];
+      const uids = [deck.slot1_card, deck.slot2_card, deck.slot3_card];
+      const myCards = uids.map(uid => allCards.find(c => c.card_uid === uid)).filter(Boolean);
+
+      if (myCards.length !== 3) {
+        document.getElementById('myTeamCards').innerHTML = '<div class="empty-hint">阵容数据异常</div>';
+        return;
+      }
+
+      renderMyTeam(myCards);
+      loadOpponents();
+      loadDailyMVP();
+    }
+
+    function renderMyTeam(cards) {
+      const power = calcMyTeamPower(cards);
+      document.getElementById('myTeamPower').textContent = '战力 ' + power;
+      const el = document.getElementById('myTeamCards');
+      el.innerHTML = cards.map(c => {
+        const color = gradeColor(c.grade);
+        return `<div class="battle-player-item" style="border-color:${color};">
+          <span class="grade-tag grade-${c.grade}">${c.grade}</span>
+          <span class="battle-player-name" style="color:${color};">${c.role_name}</span>
+          <span class="battle-player-pos">${c.pos}</span>
+          <span class="battle-player-stars">${'★'.repeat(c.star)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== 对手列表 =====
+    let allOpponents = [];
+
+    async function loadOpponents() {
+      const res = await API.get('/api/pvp/opponents');
+      if (res.code !== 0) {
+        showToast(res.msg);
+        return;
+      }
+
+      document.getElementById('myPoints').textContent = res.data.myPoints;
+
+      // 显示每日剩余次数
+      const dailyEl = document.getElementById('pvpDailyRemain');
+      if (dailyEl && res.data.dailyRemaining !== undefined) {
+        dailyEl.textContent = '今日剩余: ' + res.data.dailyRemaining + '/' + res.data.dailyLimit;
+        if (res.data.dailyRemaining <= 0) {
+          document.querySelectorAll('.pvp-challenge-btn').forEach(b => {
+            b.disabled = true;
+            b.textContent = '今日次数已用完';
+          });
+        }
+      }
+
+      // 冷却状态：仅在非战斗触发时使用服务端冷却值
+      if (!pvpCooldownActive) {
+        cooldownRemain = res.data.cooldownRemain || 0;
+        if (cooldownRemain > 0) {
+          startCooldownTimer(cooldownRemain);
+        } else {
+          document.getElementById('cooldownBar').style.display = 'none';
+        }
+      }
+
+      allOpponents = res.data.opponents || [];
+      renderOpponents(allOpponents);
+    }
+
+    function renderOpponents(opponents) {
+      const el = document.getElementById('opponentsList');
+      if (opponents.length === 0) {
+        el.innerHTML = '<div class="empty-hint">暂无可挑战的对手</div>';
+        return;
+      }
+      el.innerHTML = opponents.map(opp => {
+        const cardsHtml = opp.cards.map(c => {
+          const color = gradeColor(c.grade);
+          return `<div class="pvp-opp-card-item" style="border-color:${color};">
+            <span class="grade-tag grade-${c.grade}" style="font-size:0.5rem;">${c.grade}</span>
+            <span class="pvp-opp-card-name" style="color:${color};">${c.role_name}</span>
+            <span class="pvp-opp-card-star">${'★'.repeat(c.star)}</span>
+          </div>`;
+        }).join('');
+
+        const isDisabled = cooldownRemain > 0 ? 'disabled' : '';
+
+        return `<div class="pvp-opponent-card">
+          <div class="pvp-opp-header">
+            <span class="pvp-opp-name">${opp.nickname}</span>
+            <span class="pvp-opp-power">战力 ${opp.teamPower}</span>
+            <span style="color:#ff9800;font-size:0.65rem;white-space:nowrap;">&#10148;</span>
+          </div>
+          <div class="pvp-opp-cards">${cardsHtml}</div>
+          <button class="pixel-btn primary pvp-challenge-btn" onclick="challengePlayer(${opp.player_id})" ${isDisabled}>
+            ${cooldownRemain > 0 ? '冷却中' : '挑战'}
+          </button>
+        </div>`;
+      }).join('');
+    }
+
+    // 搜索对手
+    document.getElementById('searchOpponent').addEventListener('input', (e) => {
+      const keyword = e.target.value.trim().toLowerCase();
+      if (!keyword) { renderOpponents(allOpponents); return; }
+      const filtered = allOpponents.filter(o => o.nickname.toLowerCase().includes(keyword));
+      renderOpponents(filtered);
+    });
+
+    // 冷却倒计时
+    function startCooldownTimer(seconds) {
+      cooldownRemain = seconds;
+      const bar = document.getElementById('cooldownBar');
+      bar.style.display = 'block';
+
+      if (cooldownTimer) clearInterval(cooldownTimer);
+      cooldownTimer = setInterval(() => {
+        cooldownRemain--;
+        if (cooldownRemain <= 0) {
+          clearInterval(cooldownTimer);
+          cooldownTimer = null;
+          pvpCooldownActive = false;
+          bar.style.display = 'none';
+          loadOpponents();
+          return;
+        }
+        bar.textContent = `PVP冷却中：${cooldownRemain}秒`;
+      }, 1000);
+
+      const min = Math.floor(cooldownRemain / 60);
+      const sec = cooldownRemain % 60;
+      bar.textContent = cooldownRemain < 60 ? `PVP冷却中：${cooldownRemain}秒` : `PVP冷却中：${min}:${String(sec).padStart(2, '0')}`;
+    }
+
+    // 发起挑战
+    async function challengePlayer(targetId) {
+      if (cooldownRemain > 0) {
+        showToast('PVP冷却中，请稍后再试');
+        return;
+      }
+
+      const res = await API.post('/api/pvp/battle', { target_player_id: targetId });
+      if (res.code !== 0) {
+        showToast(res.msg || '挑战失败');
+        return;
+      }
+
+      const data = res.data;
+
+      // 更新积分
+      document.getElementById('myPoints').textContent = data.updatedPoints;
+
+      // 启动冷却（5秒）- 标记为战斗触发
+      pvpCooldownActive = true;
+      startCooldownTimer(5);
+
+      // 渲染结果弹窗
+      document.getElementById('resultTitle').innerHTML = data.win
+        ? '<div class="result-win">胜 利!</div>'
+        : '<div class="result-lose">落 败</div>';
+      document.getElementById('resultScore').textContent = data.attScore + ' : ' + data.defScore;
+
+      if (data.win) {
+        document.getElementById('resultReward').innerHTML =
+          '<div class="result-reward-label">赛季积分</div>' +
+          '<div class="result-reward-values">+' + data.pointChange + ' 积分  +' + data.diamondReward + ' 钻石</div>';
+      } else {
+        document.getElementById('resultReward').innerHTML =
+          '<div class="result-reward-label" style="color:#888;">落败不扣积分</div>';
+      }
+
+      document.getElementById('myStatsBody').innerHTML = data.myCards.map(renderStatsRow).join('');
+      document.getElementById('defStatsBody').innerHTML = data.defCards.map(renderStatsRow).join('');
+      document.getElementById('resultMask').style.display = 'flex';
+    }
+
+    function renderStatsRow(player) {
+      const color = gradeColor(player.grade);
+      return `<tr>
+        <td class="player-name-cell" style="color:${color};">${player.name}</td>
+        <td>${player.pos}</td>
+        <td>${player.score}</td>
+        <td>${player.rebound}</td>
+        <td>${player.assist}</td>
+        <td>${player.steal}</td>
+        <td>${player.block}</td>
+      </tr>`;
+    }
+
+    // 关闭结果弹窗
+    document.getElementById('btnResultClose').addEventListener('click', () => {
+      document.getElementById('resultMask').style.display = 'none';
+    });
+
+    // 计算己方战力
+    function calcMyTeamPower(cards) {
+      let total = 0;
+      cards.forEach(c => {
+        const roleBase = ALL_ROLES.find(r => r.name === c.role_name);
+        if (!roleBase) return;
+        const growth = { B: 4, A: 6, S: 8 }[c.grade] * (c.star - 1);
+        const sum = Object.keys(roleBase.attrs).reduce((s, k) => s + Math.min((roleBase.attrs[k] || 0) + growth, 100), 0);
+        const avg = sum / Object.keys(roleBase.attrs).length;
+        total += Math.round(avg * 10);
+      });
+      return total;
+    }
+
+    // 排行榜
+    async function loadLeaderboard() {
+      const res = await API.get('/api/pvp/leaderboard');
+      if (res.code !== 0) return;
+
+      const list = res.data.list || [];
+      const el = document.getElementById('leaderboardList');
+
+      if (list.length === 0) {
+        el.innerHTML = '<div class="empty-hint">暂无排行数据</div>';
+        return;
+      }
+
+      el.innerHTML = list.map(item => {
+        const rankClass = item.rank <= 3 ? 'top3' : '';
+        const rankText = item.rank <= 3 ? ['🥇', '🥈', '🥉'][item.rank - 1] : item.rank;
+        return `<div class="leaderboard-item">
+          <span class="lb-rank ${rankClass}">${rankText}</span>
+          <span class="lb-name">${item.nickname}</span>
+          <span class="lb-points">${item.points} 分</span>
+        </div>`;
+      }).join('');
+    }
+
+    // 对战日志
+    async function loadBattleLog() {
+      const res = await API.get('/api/pvp/battle-log');
+      if (res.code !== 0) return;
+
+      const logs = res.data.logs || [];
+      const el = document.getElementById('battleLogList');
+
+      if (logs.length === 0) {
+        el.innerHTML = '<div class="empty-hint">暂无对战记录</div>';
+        return;
+      }
+
+      el.innerHTML = logs.map((log, idx) => {
+        const isWin = log.result === 'win';
+        const resultText = isWin ? '胜' : '负';
+        const resultClass = isWin ? 'win' : 'lose';
+        const timeStr = formatTime(log.time);
+        const roleText = log.role === 'attack' ? '我方进攻' : '我方防守';
+        const roleColor = log.role === 'attack' ? '#6a9aff' : '#ff9800';
+        const attScore = log.att_score;
+        const defScore = log.def_score;
+
+        // 阵容卡片渲染
+        const renderCards = (cards) => {
+          if (!cards || !cards.length) return '';
+          return cards.map(c => {
+            const color = gradeColor(c.grade);
+            return `<div class="dl-card-item">
+              <span class="grade-tag grade-${c.grade}">${c.grade}</span>
+              <span class="dl-card-name" style="color:${color};">${c.name}</span>
+              <span class="dl-card-star">${'★'.repeat(c.star)}</span>
+            </div>`;
+          }).join('');
+        };
+
+        // 球员比赛数据表格
+        let statsHtml = '';
+        if (log.player_stats && log.player_stats.length > 0) {
+          const attackers = log.player_stats.filter(p => p.side === 'attacker');
+          const defenders = log.player_stats.filter(p => p.side === 'defender');
+          const renderStatRows = (players) => players.map(p => {
+            const color = gradeColor(p.grade);
+            return `<tr>
+              <td class="player-name-cell" style="color:${color};">${p.name}</td>
+              <td>${p.pos}</td>
+              <td>${p.score}</td>
+              <td>${p.rebound}</td>
+              <td>${p.assist}</td>
+              <td>${p.steal}</td>
+              <td>${p.block}</td>
+            </tr>`;
+          }).join('');
+
+          statsHtml = `
+            <div class="dl-stats-section">
+              <div class="dl-stats-label">进攻方数据</div>
+              <table class="dl-stats-table">
+                <thead><tr><th>球员</th><th>位置</th><th>得分</th><th>篮板</th><th>助攻</th><th>抢断</th><th>盖帽</th></tr></thead>
+                <tbody>${renderStatRows(attackers)}</tbody>
+              </table>
+            </div>
+            <div class="dl-stats-section">
+              <div class="dl-stats-label">防守方数据</div>
+              <table class="dl-stats-table">
+                <thead><tr><th>球员</th><th>位置</th><th>得分</th><th>篮板</th><th>助攻</th><th>抢断</th><th>盖帽</th></tr></thead>
+                <tbody>${renderStatRows(defenders)}</tbody>
+              </table>
+            </div>`;
+        }
+
+        return `<div class="defense-log-item" onclick="toggleBattleLogDetail(${idx})">
+          <div class="dl-summary">
+            <span class="dl-result ${resultClass}">${resultText}</span>
+            <div class="dl-info">
+              <div class="dl-attacker"><span style="color:${roleColor};">${roleText}</span> vs ${log.opponent_name}</div>
+              <div class="dl-score">我方 ${log.role === 'attack' ? attScore : defScore} : ${log.role === 'attack' ? defScore : attScore} 对方</div>
+            </div>
+            <span class="dl-time">${timeStr}</span>
+            <span class="dl-expand-icon" id="blIcon${idx}">▼</span>
+          </div>
+          <div class="dl-detail" id="blDetail${idx}">
+            ${statsHtml}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function toggleBattleLogDetail(idx) {
+      const detail = document.getElementById('blDetail' + idx);
+      const icon = document.getElementById('blIcon' + idx);
+      if (!detail) return;
+      const isOpen = detail.classList.contains('show');
+      detail.classList.toggle('show');
+      if (icon) icon.textContent = isOpen ? '▼' : '▲';
+    }
+
+    // 每日MVP展示 + 今日胜场排行
+    async function loadDailyMVP() {
+      const res = await API.get('/api/pvp/daily-mvp');
+      if (res.code !== 0) return;
+
+      // 已结算MVP
+      if (res.data.mvp) {
+        const mvp = res.data.mvp;
+        const bar = document.getElementById('dailyMvpBar');
+        bar.style.display = 'block';
+        document.getElementById('mvpName').textContent = mvp.nickname;
+        document.getElementById('mvpInfo').textContent = `今日胜利 ${mvp.win_count} 次`;
+      }
+
+      // 今日胜场排行榜
+      const lb = res.data.leaderboard || [];
+      if (lb.length > 0) {
+        const winBar = document.getElementById('dailyWinBar');
+        winBar.style.display = 'block';
+        const listEl = document.getElementById('dailyWinList');
+        listEl.innerHTML = lb.map((item, i) => {
+          const rankText = i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1);
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.15rem 0;font-size:0.65rem;">
+            <span style="color:${i < 3 ? '#ffd700' : '#aaa'};">${rankText} ${item.nickname}</span>
+            <span style="color:#6a9aff;">${item.win_count}胜</span>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // 每日单项统计榜
+    let dailyStatsData = {};
+    let currentDailyCat = 'score';
+
+    async function loadDailyStats() {
+      const res = await API.get('/api/pvp/daily-stats');
+      if (res.code !== 0) return;
+      dailyStatsData = res.data.stats || {};
+      renderDailyStats();
+    }
+
+    function renderDailyStats() {
+      const list = dailyStatsData[currentDailyCat] || [];
+      const el = document.getElementById('dailyStatsList');
+      if (list.length === 0) {
+        el.innerHTML = '<div class="empty-hint">今日暂无数据</div>';
+        return;
+      }
+      const catLabels = { score: '得分', rebound: '篮板', assist: '助攻', steal: '抢断', block: '盖帽' };
+      el.innerHTML = list.map(item => {
+        const color = gradeColor(item.grade);
+        const rankText = item.rank <= 3 ? ['🥇', '🥈', '🥉'][item.rank - 1] : item.rank;
+        return `<div class="leaderboard-item">
+          <span class="lb-rank">${rankText}</span>
+          <span class="lb-name">${item.nickname} <span style="color:${color};font-size:0.55rem;">[${item.role_name}]</span></span>
+          <span class="lb-points">${item.value} ${catLabels[currentDailyCat]}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // 今日数据子标签切换
+    document.getElementById('dailyStatsTabs').addEventListener('click', e => {
+      const tab = e.target.closest('.dstab');
+      if (!tab) return;
+      document.querySelectorAll('.dstab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentDailyCat = tab.getAttribute('data-cat');
+      renderDailyStats();
+    });
+
+    loadPage();
+  </script>
+</body>
+</html>

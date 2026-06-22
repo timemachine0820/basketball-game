@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>巢湖篮球经理 - 出战阵容</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .deck-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .deck-slot {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem;
+    }
+    .deck-slot-label {
+      width: 2.4rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .deck-slot-num { font-size: 0.65rem; color: #888; }
+    .deck-slot-rule { font-size: 0.6rem; color: #6a9aff; }
+    .deck-slot-card {
+      flex: 1;
+      min-height: 3.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #4a4a8a;
+      border-radius: 4px;
+      background: #0d0d1a;
+      cursor: pointer;
+      padding: 0.4rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .deck-slot-card.filled { border-style: solid; background: #12122a; }
+    .deck-slot-card-name { font-size: 0.85rem; font-weight: bold; text-align: center; }
+    .deck-slot-card-info { text-align: center; }
+    .deck-slot-card-pos { font-size: 0.6rem; color: #888; }
+    .deck-slot-card-stars { font-size: 0.6rem; color: #ffd700; }
+    .deck-slot-remove {
+      width: 1.6rem; height: 1.6rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: #888; cursor: pointer; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .deck-slot-remove:active { color: #ff5555; }
+    .deck-empty-text { font-size: 0.7rem; color: #666; }
+    .deck-action-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .deck-action-bar .pixel-btn { flex: 1; }
+    .pixel-btn:disabled { opacity: 0.4; pointer-events: none; }
+    .team-power-bar {
+      display: flex; align-items: center; justify-content: center;
+      padding: 0.3rem 0.6rem; margin-bottom: 0.5rem;
+      background: #1a1a3e; border: 2px solid #ff9800; border-radius: 3px;
+    }
+    .team-power-bar span { font-size: 0.75rem; color: #ffd700; }
+    /* 选卡弹窗 */
+    .pick-mask {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7);
+      display: flex; flex-direction: column; justify-content: flex-end; z-index: 200;
+    }
+    .pick-panel {
+      background: #12122a; border-top: 3px solid #4a4a8a;
+      max-height: 70vh; display: flex; flex-direction: column;
+    }
+    .pick-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.6rem 0.8rem; border-bottom: 1px solid #2a2a4a;
+    }
+    .pick-title { font-size: 0.9rem; color: #ff9800; }
+    .pick-close {
+      font-size: 1.2rem; color: #888; cursor: pointer;
+      padding: 0 0.3rem; -webkit-tap-highlight-color: transparent;
+    }
+    .pick-list {
+      flex: 1; overflow-y: auto; padding: 0.5rem;
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 0.4rem; align-content: start;
+    }
+    .pick-empty { grid-column: 1 / -1; text-align: center; color: #666; font-size: 0.8rem; padding: 1.5rem 0; }
+    .pick-card { padding: 0.5rem; cursor: pointer; }
+    .pick-card:active { transform: scale(0.96); }
+    /* 持有卡牌区 */
+    .owned-section { margin-top: 0.5rem; }
+    .filter-row { display: flex; gap: 0.3rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .filter-tab {
+      padding: 0.25rem 0.5rem; font-size: 0.65rem;
+      background: #1a1a3e; border: 2px solid #2a2a4a; border-radius: 3px;
+      color: #888; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .filter-tab.active { background: #2a2a5a; border-color: #ff9800; color: #ff9800; }
+    .grade-filter-B.active { border-color: #8bc34a; color: #8bc34a; }
+    .grade-filter-A.active { border-color: #2196f3; color: #2196f3; }
+    .grade-filter-S.active { border-color: #ff9800; color: #ff9800; }
+    .owned-cards-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem; margin-bottom: 0.5rem;
+    }
+    .owned-card { padding: 0.4rem; cursor: pointer; }
+    .owned-card:active { transform: scale(0.96); }
+    /* 卡牌详情弹窗 */
+    .detail-mask {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center; z-index: 300;
+    }
+    .detail-panel {
+      width: 92%; max-width: 20rem; max-height: 80vh; overflow-y: auto;
+      background: #12122a; border: 3px solid #4a4a8a; border-radius: 6px; padding: 0.8rem;
+    }
+    .detail-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+    .detail-name { font-size: 1rem; font-weight: bold; flex: 1; }
+    .detail-close { font-size: 1.2rem; color: #888; cursor: pointer; padding: 0 0.3rem; }
+    .detail-pos { font-size: 0.7rem; color: #aaa; margin-bottom: 0.3rem; }
+    .detail-stars { font-size: 0.75rem; color: #ffd700; margin-bottom: 0.5rem; }
+    .detail-section-title {
+      font-size: 0.7rem; color: #ff9800;
+      border-bottom: 1px solid #2a2a4a; padding-bottom: 0.2rem; margin-bottom: 0.3rem;
+    }
+    .detail-attr-row { display: flex; align-items: center; margin-bottom: 0.2rem; }
+    .detail-attr-name { width: 2.2rem; font-size: 0.6rem; color: #aaa; flex-shrink: 0; }
+    .detail-attr-bar-bg {
+      flex: 1; height: 0.5rem; background: #0a0a1e;
+      border-radius: 2px; margin: 0 0.3rem; overflow: hidden;
+    }
+    .detail-attr-bar { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .detail-attr-val { width: 1.6rem; text-align: right; font-size: 0.6rem; color: #e0e0e0; }
+    .detail-talent {
+      margin-top: 0.4rem; padding: 0.4rem;
+      background: #1a1a2e; border: 1px solid #ff9800; border-radius: 3px;
+    }
+    .detail-talent-title { font-size: 0.65rem; color: #ff9800; margin-bottom: 0.15rem; }
+    .detail-talent-desc { font-size: 0.6rem; color: #ccc; }
+    .detail-upgrade-btn {
+      margin-top: 0.6rem; width: 100%; padding: 0.6rem;
+      font-size: 0.8rem; text-align: center;
+    }
+    /* 升星确认弹窗 */
+    .upgrade-mask {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: flex; align-items: center; justify-content: center; z-index: 400;
+    }
+    .upgrade-panel {
+      width: 90%; max-width: 18rem; background: #12122a;
+      border: 3px solid #ff9800; border-radius: 6px; padding: 0.8rem;
+    }
+    .upgrade-title { text-align: center; font-size: 0.85rem; color: #ff9800; margin-bottom: 0.5rem; }
+    .upgrade-preview { text-align: center; margin-bottom: 0.6rem; }
+    .upgrade-card-info { display: flex; align-items: center; justify-content: center; gap: 0.3rem; margin-bottom: 0.3rem; font-size: 0.75rem; }
+    .upgrade-arrow { text-align: center; color: #ffd700; font-size: 1rem; margin: 0.2rem 0; }
+    .upgrade-result { font-weight: bold; }
+    .upgrade-btn-group { display: flex; gap: 0.5rem; }
+    .upgrade-btn-group .pixel-btn { flex: 1; font-size: 0.8rem; }
+    .owned-count { font-size: 0.65rem; color: #888; margin-bottom: 0.3rem; }
+    /* 分解模式 */
+    .decompose-bar {
+      display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center;
+    }
+    .decompose-bar .pixel-btn { flex: 1; }
+    .decompose-info {
+      font-size: 0.65rem; color: #ff9800; text-align: center; margin-bottom: 0.3rem;
+    }
+    .owned-card.decompose-selected {
+      border-color: #ff5252 !important;
+      box-shadow: 0 0 6px #ff5252;
+    }
+    .owned-card.decompose-selected::after {
+      content: '✓';
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      color: #ff5252;
+      font-size: 0.6rem;
+      font-weight: bold;
+    }
+    .owned-card { position: relative; }
+    .decompose-mask {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: flex; align-items: center; justify-content: center; z-index: 400;
+    }
+    .decompose-panel {
+      width: 90%; max-width: 18rem; background: #12122a;
+      border: 3px solid #ff5252; border-radius: 6px; padding: 0.8rem;
+    }
+    .decompose-title { text-align: center; font-size: 0.85rem; color: #ff5252; margin-bottom: 0.5rem; }
+    .decompose-reward { text-align: center; font-size: 0.75rem; color: #ffd700; margin-bottom: 0.5rem; }
+    .decompose-btn-group { display: flex; gap: 0.5rem; }
+    .decompose-btn-group .pixel-btn { flex: 1; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="home-header">
+    <span class="home-title">出战阵容</span>
+    <span class="home-nickname" id="nicknameDisplay">加载中...</span>
+  </div>
+
+  <div class="home-content">
+    <!-- 战力显示 -->
+    <div class="team-power-bar" id="teamPowerBar" style="display:none;">
+      <span>阵容战力: <b id="teamPowerVal">0</b></span>
+    </div>
+
+    <!-- 阵容编排 -->
+    <div class="panel-title">阵容编排</div>
+    <div class="deck-slots" id="deckSlots">
+      <div class="deck-slot pixel-border">
+        <div class="deck-slot-label">
+          <div class="deck-slot-num">槽1</div>
+          <div class="deck-slot-rule">PG/SG</div>
+        </div>
+        <div class="deck-slot-card" id="slotCard1" data-slot="1">
+          <span class="deck-empty-text">点击选卡</span>
+        </div>
+        <div class="deck-slot-remove" id="slotRemove1" style="display:none;">&times;</div>
+      </div>
+      <div class="deck-slot pixel-border">
+        <div class="deck-slot-label">
+          <div class="deck-slot-num">槽2</div>
+          <div class="deck-slot-rule">SF/PF</div>
+        </div>
+        <div class="deck-slot-card" id="slotCard2" data-slot="2">
+          <span class="deck-empty-text">点击选卡</span>
+        </div>
+        <div class="deck-slot-remove" id="slotRemove2" style="display:none;">&times;</div>
+      </div>
+      <div class="deck-slot pixel-border">
+        <div class="deck-slot-label">
+          <div class="deck-slot-num">槽3</div>
+          <div class="deck-slot-rule">C</div>
+        </div>
+        <div class="deck-slot-card" id="slotCard3" data-slot="3">
+          <span class="deck-empty-text">点击选卡</span>
+        </div>
+        <div class="deck-slot-remove" id="slotRemove3" style="display:none;">&times;</div>
+      </div>
+    </div>
+
+    <div class="deck-action-bar">
+      <button class="pixel-btn primary" id="btnSave">保存阵容</button>
+      <button class="pixel-btn" id="btnBattle" disabled>对战</button>
+    </div>
+
+    <!-- 一键操作 -->
+    <div class="panel-title">卡牌操作</div>
+    <div class="deck-action-bar">
+      <button class="pixel-btn primary" id="btnOneClickUpgrade">一键合成</button>
+      <button class="pixel-btn" id="btnDecompose" style="color:#ff5252;">一键分解</button>
+    </div>
+
+    <!-- 持有卡牌 -->
+    <div class="owned-section">
+      <div class="panel-title">我的卡牌 <span class="owned-count" id="ownedCount"></span></div>
+      <div class="filter-row">
+        <div class="filter-tab active" data-filter="pos" data-value="ALL">全部</div>
+        <div class="filter-tab" data-filter="pos" data-value="PG">PG</div>
+        <div class="filter-tab" data-filter="pos" data-value="SG">SG</div>
+        <div class="filter-tab" data-filter="pos" data-value="SF">SF</div>
+        <div class="filter-tab" data-filter="pos" data-value="PF">PF</div>
+        <div class="filter-tab" data-filter="pos" data-value="C">C</div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-tab active" data-filter="grade" data-value="ALL">全部</div>
+        <div class="filter-tab grade-filter-B" data-filter="grade" data-value="B">B</div>
+        <div class="filter-tab grade-filter-A" data-filter="grade" data-value="A">A</div>
+        <div class="filter-tab grade-filter-S" data-filter="grade" data-value="S">S</div>
+      </div>
+      <div class="owned-cards-grid" id="ownedCardsGrid"></div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="bottom-nav">
+    <div class="nav-item" id="navHome"><span class="nav-icon">&#9733;</span><span>主页</span></div>
+    <div class="nav-item" id="navCards"><span class="nav-icon">&#9827;</span><span>卡牌</span></div>
+    <div class="nav-item active"><span class="nav-icon">&#9812;</span><span>阵容</span></div>
+    <div class="nav-item" id="navBattle"><span class="nav-icon">&#9876;</span><span>对战</span></div>
+    <div class="nav-item" id="navDraw"><span class="nav-icon">&#9830;</span><span>抽卡</span></div>
+  </div>
+  <div style="height: 4.5rem;"></div>
+
+  <!-- 选卡弹窗 -->
+  <div class="pick-mask" id="pickMask" style="display:none;">
+    <div class="pick-panel pixel-border">
+      <div class="pick-header">
+        <span class="pick-title" id="pickTitle">选择卡牌</span>
+        <span class="pick-close" id="pickClose">&times;</span>
+      </div>
+      <div class="pick-list" id="pickList">
+        <div class="pick-empty">暂无符合条件的卡牌</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 卡牌详情弹窗 -->
+  <div class="detail-mask" id="detailMask" style="display:none;">
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <span class="grade-tag" id="detailGrade"></span>
+        <span class="detail-name" id="detailName"></span>
+        <span class="detail-close" id="detailClose">&times;</span>
+      </div>
+      <div class="detail-pos" id="detailPos"></div>
+      <div class="detail-stars" id="detailStars"></div>
+      <div class="detail-section-title">当前属性</div>
+      <div id="detailAttrs"></div>
+      <div id="detailTalent"></div>
+      <div id="detailUpgradeArea"></div>
+    </div>
+  </div>
+
+  <!-- 升星确认弹窗 -->
+  <div class="upgrade-mask" id="upgradeMask" style="display:none;">
+    <div class="upgrade-panel">
+      <div class="upgrade-title">确认升星合成</div>
+      <div class="upgrade-preview" id="upgradePreview"></div>
+      <div class="upgrade-btn-group">
+        <button class="pixel-btn" id="btnUpgradeCancel">取消</button>
+        <button class="pixel-btn primary" id="btnUpgradeConfirm">确认合成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 一键合成结果弹窗 -->
+  <div class="upgrade-mask" id="upgradeAllMask" style="display:none;">
+    <div class="upgrade-panel">
+      <div class="upgrade-title">一键合成结果</div>
+      <div class="upgrade-preview" id="upgradeAllPreview"></div>
+      <div class="upgrade-btn-group">
+        <button class="pixel-btn primary" id="btnUpgradeAllClose">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分解确认弹窗 -->
+  <div class="decompose-mask" id="decomposeMask" style="display:none;">
+    <div class="decompose-panel">
+      <div class="decompose-title">确认分解</div>
+      <div class="decompose-reward" id="decomposeReward"></div>
+      <div class="decompose-btn-group">
+        <button class="pixel-btn" id="btnDecomposeCancel">取消</button>
+        <button class="pixel-btn primary" id="btnDecomposeConfirm" style="background:#ff5252;color:#fff;">确认分解</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="/config/game-config.js"></script>
+  <script>
+    if (!localStorage.getItem('player_id')) {
+      window.location.href = 'index.html';
+    }
+
+    const ATTR_LABELS = { threept:'三分', midshot:'中投', dunk:'扣篮', rebound:'篮板', block:'盖帽', speed:'速度', pass:'传球', steal:'抢断' };
+
+    const deck = { 1: null, 2: null, 3: null };
+    let allCards = [];
+    let currentPickSlot = 0;
+    let isSaving = false;
+    let filterPos = 'ALL';
+    let filterGrade = 'ALL';
+    let selectedUpgradeCards = [];
+    let isUpgrading = false;
+    let decomposeMode = false;
+    let decomposeSelected = new Set();
+
+    const SLOT_ALLOWED = { 1: ['PG', 'SG'], 2: ['SF', 'PF'], 3: ['C'] };
+    const SLOT_LABEL = { 1: 'PG/SG', 2: 'SF/PF', 3: 'C' };
+
+    // 导航
+    document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
+    document.getElementById('navCards').addEventListener('click', () => { window.location.href = 'cards.html'; });
+    document.getElementById('navBattle').addEventListener('click', () => { window.location.href = 'train.html'; });
+    document.getElementById('navDraw').addEventListener('click', () => { window.location.href = 'draw.html'; });
+
+    // 角色基础属性
+    function getRoleBase(name) { return ALL_ROLES.find(r => r.name === name); }
+    function calcFinalAttrs(baseAttrs, grade, star) {
+      const growth = GROWTH_PER_STAR[grade] * (star - 1);
+      const r = {};
+      for (const k of ATTR_NAMES) r[k] = (baseAttrs[k] || 0) + growth;
+      return r;
+    }
+    function calcCardPower(card) {
+      const rb = getRoleBase(card.role_name);
+      if (!rb) return 0;
+      const attrs = calcFinalAttrs(rb.attrs, card.grade, card.star);
+      const sum = ATTR_NAMES.reduce((s, k) => s + (attrs[k] || 0), 0);
+      const avg = sum / ATTR_NAMES.length;
+      return Math.round(avg * 10);
+    }
+    function updateTeamPower() {
+      const full = deck[1] && deck[2] && deck[3];
+      if (!full) { document.getElementById('teamPowerBar').style.display = 'none'; return; }
+      let total = 0;
+      for (let s = 1; s <= 3; s++) {
+        const card = allCards.find(c => c.card_uid === deck[s]);
+        if (card) total += calcCardPower(card);
+      }
+      document.getElementById('teamPowerVal').textContent = total;
+      document.getElementById('teamPowerBar').style.display = 'flex';
+    }
+
+    // 渲染槽位
+    function renderSlots() {
+      for (let s = 1; s <= 3; s++) {
+        const cardEl = document.getElementById('slotCard' + s);
+        const removeEl = document.getElementById('slotRemove' + s);
+        const uid = deck[s];
+        if (uid) {
+          const card = allCards.find(c => c.card_uid === uid);
+          if (card) {
+            const color = gradeColor(card.grade);
+            cardEl.classList.add('filled');
+            cardEl.style.borderColor = color;
+            cardEl.innerHTML = `<div class="deck-slot-card-info">
+              <span class="grade-tag grade-${card.grade}">${card.grade}</span>
+              <div class="deck-slot-card-name" style="color:${color};">${card.role_name}</div>
+              <div class="deck-slot-card-pos">${card.pos}</div>
+              <div class="deck-slot-card-stars">${'★'.repeat(card.star)}</div>
+            </div>`;
+            removeEl.style.display = 'flex';
+          } else {
+            deck[s] = null;
+            renderEmptySlot(cardEl, removeEl);
+          }
+        } else {
+          renderEmptySlot(cardEl, removeEl);
+        }
+      }
+      document.getElementById('btnBattle').disabled = !(deck[1] && deck[2] && deck[3]);
+      updateTeamPower();
+    }
+    function renderEmptySlot(cardEl, removeEl) {
+      cardEl.classList.remove('filled');
+      cardEl.style.borderColor = '';
+      cardEl.innerHTML = '<span class="deck-empty-text">点击选卡</span>';
+      removeEl.style.display = 'none';
+    }
+
+    // 槽位点击
+    for (let s = 1; s <= 3; s++) {
+      document.getElementById('slotCard' + s).addEventListener('click', () => openPickPanel(s));
+      document.getElementById('slotRemove' + s).addEventListener('click', (e) => {
+        e.stopPropagation();
+        deck[s] = null;
+        renderSlots();
+      });
+    }
+
+    // 选卡弹窗
+    function openPickPanel(slot) {
+      currentPickSlot = slot;
+      const allowed = SLOT_ALLOWED[slot];
+      document.getElementById('pickTitle').textContent = `选择槽${slot}卡牌 (${SLOT_LABEL[slot]})`;
+      const usedUids = new Set();
+      for (let s = 1; s <= 3; s++) { if (s !== slot && deck[s]) usedUids.add(deck[s]); }
+      const candidates = allCards.filter(c => allowed.includes(c.pos) && !usedUids.has(c.card_uid));
+      const listEl = document.getElementById('pickList');
+      if (candidates.length === 0) {
+        listEl.innerHTML = '<div class="pick-empty">暂无符合条件的卡牌</div>';
+      } else {
+        const go = { S:0, A:1, B:2 };
+        candidates.sort((a, b) => (go[a.grade] - go[b.grade]) || (b.star - a.star));
+        listEl.innerHTML = candidates.map(c => {
+          const color = gradeColor(c.grade);
+          return `<div class="card-pixel pixel-border pick-card" style="border-color:${color};" data-uid="${c.card_uid}">
+            <div class="card-pixel-top"><span class="grade-tag grade-${c.grade}">${c.grade}</span><span class="card-pixel-pos">${c.pos}</span></div>
+            <div class="card-pixel-name" style="color:${color};">${c.role_name}</div>
+            <div class="card-pixel-stars">${'★'.repeat(c.star)}</div>
+          </div>`;
+        }).join('');
+        listEl.querySelectorAll('.pick-card').forEach(el => {
+          el.addEventListener('click', () => {
+            deck[currentPickSlot] = parseInt(el.dataset.uid);
+            closePickPanel();
+            renderSlots();
+          });
+        });
+      }
+      document.getElementById('pickMask').style.display = 'flex';
+    }
+    function closePickPanel() { document.getElementById('pickMask').style.display = 'none'; }
+    document.getElementById('pickClose').addEventListener('click', closePickPanel);
+    document.getElementById('pickMask').addEventListener('click', (e) => { if (e.target === document.getElementById('pickMask')) closePickPanel(); });
+
+    // 保存阵容
+    document.getElementById('btnSave').addEventListener('click', debounce(async () => {
+      if (isSaving) return;
+      if (!deck[1] || !deck[2] || !deck[3]) { showToast('三个槽位必须全部填满'); return; }
+      isSaving = true;
+      const res = await API.post('/api/player/deck', { slot1_card: deck[1], slot2_card: deck[2], slot3_card: deck[3] });
+      isSaving = false;
+      if (res.code !== 0) { showToast(res.msg || '保存失败'); return; }
+      showToast('阵容保存成功');
+    }, 800));
+
+    document.getElementById('btnBattle').addEventListener('click', () => {
+      if (!deck[1] || !deck[2] || !deck[3]) { showToast('请先填满三个槽位'); return; }
+      window.location.href = 'train.html';
+    });
+
+    // ===== 持有卡牌筛选 =====
+    document.querySelectorAll('[data-filter="pos"]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterPos = tab.dataset.value;
+        document.querySelectorAll('[data-filter="pos"]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderOwnedCards();
+      });
+    });
+    document.querySelectorAll('[data-filter="grade"]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterGrade = tab.dataset.value;
+        document.querySelectorAll('[data-filter="grade"]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderOwnedCards();
+      });
+    });
+
+    function renderOwnedCards() {
+      const filtered = allCards.filter(c => {
+        if (filterPos !== 'ALL' && c.pos !== filterPos) return false;
+        if (filterGrade !== 'ALL' && c.grade !== filterGrade) return false;
+        return true;
+      });
+      document.getElementById('ownedCount').textContent = `(${filtered.length}张)`;
+      const grid = document.getElementById('ownedCardsGrid');
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;font-size:0.7rem;padding:1rem 0;">暂无卡牌</div>';
+        return;
+      }
+      const go = { S:0, A:1, B:2 };
+      filtered.sort((a, b) => (go[a.grade] - go[b.grade]) || (b.star - a.star) || a.role_name.localeCompare(b.role_name));
+      grid.innerHTML = filtered.map(c => {
+        const color = gradeColor(c.grade);
+        const selClass = decomposeMode && decomposeSelected.has(c.card_uid) ? ' decompose-selected' : '';
+        return `<div class="card-pixel pixel-border owned-card${selClass}" style="border-color:${color};" data-uid="${c.card_uid}">
+          <div class="card-pixel-top"><span class="grade-tag grade-${c.grade}">${c.grade}</span><span class="card-pixel-pos">${c.pos}</span></div>
+          <div class="card-pixel-name" style="color:${color};">${c.role_name}</div>
+          <div class="card-pixel-stars">${'★'.repeat(c.star) + '☆'.repeat((STAR_LIMIT[c.grade] || 5) - c.star)}</div>
+        </div>`;
+      }).join('');
+      grid.querySelectorAll('.owned-card').forEach(el => {
+        el.addEventListener('click', () => {
+          const uid = parseInt(el.dataset.uid);
+          if (decomposeMode) {
+            toggleDecomposeSelect(uid);
+          } else {
+            showCardDetail(uid);
+          }
+        });
+      });
+    }
+
+    // ===== 卡牌详情弹窗 =====
+    function showCardDetail(cardUid) {
+      const card = allCards.find(c => c.card_uid === cardUid);
+      if (!card) return;
+      const roleBase = getRoleBase(card.role_name);
+      const color = gradeColor(card.grade);
+      const maxStar = STAR_LIMIT[card.grade] || 5;
+
+      document.getElementById('detailGrade').className = 'grade-tag grade-' + card.grade;
+      document.getElementById('detailGrade').textContent = card.grade;
+      document.getElementById('detailName').textContent = card.role_name;
+      document.getElementById('detailName').style.color = color;
+      document.getElementById('detailPos').textContent = '位置: ' + card.pos + '  |  星级: ' + card.star + '/' + maxStar;
+      document.getElementById('detailStars').textContent = renderStars(card.star);
+
+      if (!roleBase) {
+        document.getElementById('detailAttrs').innerHTML = '';
+        document.getElementById('detailTalent').innerHTML = '';
+        document.getElementById('detailUpgradeArea').innerHTML = '';
+        document.getElementById('detailMask').style.display = 'flex';
+        return;
+      }
+
+      const finalAttrs = calcFinalAttrs(roleBase.attrs, card.grade, card.star);
+      document.getElementById('detailAttrs').innerHTML = ATTR_NAMES.map(key => {
+        const val = finalAttrs[key];
+        return `<div class="detail-attr-row">
+          <span class="detail-attr-name">${ATTR_LABELS[key]}</span>
+          <div class="detail-attr-bar-bg"><div class="detail-attr-bar" style="width:${Math.min(val, 100)}%;background:${color};"></div></div>
+          <span class="detail-attr-val">${val}</span>
+        </div>`;
+      }).join('');
+
+      // S天赋
+      const talentEl = document.getElementById('detailTalent');
+      if (card.grade === 'S' && S_ROLE_TALENT[card.role_name]) {
+        const tAttr = S_ROLE_TALENT[card.role_name];
+        const tVal = Math.round(finalAttrs[tAttr] * S_TALENT_MULTIPLIER);
+        const nickname = S_ROLE_NICKNAME[card.role_name] || '';
+        talentEl.innerHTML = `<div class="detail-talent">
+          <div class="detail-talent-title">${nickname ? '「' + nickname + '」' : ''}</div>
+          <div class="detail-talent-desc">S天赋: ${ATTR_LABELS[tAttr]}+20%，结算时额外+${tVal}（${finalAttrs[tAttr]} × 20%）</div>
+        </div>`;
+      } else {
+        talentEl.innerHTML = '';
+      }
+
+      // 升星按钮
+      const upgradeArea = document.getElementById('detailUpgradeArea');
+      if (card.star < maxStar) {
+        const dupCount = allCards.filter(c => c.role_name === card.role_name && c.grade === card.grade && c.star === card.star && c.card_uid !== card.card_uid).length;
+        if (dupCount > 0) {
+          upgradeArea.innerHTML = `<button class="pixel-btn primary detail-upgrade-btn" id="btnDetailUpgrade">一键升星 (可合成${dupCount}次)</button>`;
+          document.getElementById('btnDetailUpgrade').addEventListener('click', () => {
+            showUpgradeConfirm(card);
+          });
+        } else {
+          upgradeArea.innerHTML = `<div style="text-align:center;font-size:0.65rem;color:#666;margin-top:0.5rem;">升星需要同品级同星级的相同球员</div>`;
+        }
+      } else {
+        upgradeArea.innerHTML = `<div style="text-align:center;font-size:0.65rem;color:#ffd700;margin-top:0.5rem;">已满星</div>`;
+      }
+
+      document.getElementById('detailMask').style.display = 'flex';
+    }
+
+    document.getElementById('detailClose').addEventListener('click', () => {
+      document.getElementById('detailMask').style.display = 'none';
+    });
+    document.getElementById('detailMask').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('detailMask')) {
+        document.getElementById('detailMask').style.display = 'none';
+      }
+    });
+
+    // ===== 升星合成 =====
+    function showUpgradeConfirm(card) {
+      const dup = allCards.find(c => c.role_name === card.role_name && c.grade === card.grade && c.star === card.star && c.card_uid !== card.card_uid);
+      if (!dup) { showToast('没有可合成的相同卡牌'); return; }
+      selectedUpgradeCards = [card.card_uid, dup.card_uid];
+      const color = gradeColor(card.grade);
+      const maxStar = STAR_LIMIT[card.grade] || 5;
+      document.getElementById('upgradePreview').innerHTML = `
+        <div class="upgrade-card-info">
+          <span class="grade-tag grade-${card.grade}">${card.grade}</span>
+          <span style="color:${color};">${card.role_name}</span>
+          <span style="color:#ffd700;">${'★'.repeat(card.star)}</span>
+        </div>
+        <div class="upgrade-arrow">+</div>
+        <div class="upgrade-card-info">
+          <span class="grade-tag grade-${dup.grade}">${dup.grade}</span>
+          <span style="color:${color};">${dup.role_name}</span>
+          <span style="color:#ffd700;">${'★'.repeat(dup.star)}</span>
+        </div>
+        <div class="upgrade-arrow">=</div>
+        <div class="upgrade-card-info upgrade-result">
+          <span class="grade-tag grade-${card.grade}">${card.grade}</span>
+          <span style="color:${color};font-weight:bold;">${card.role_name}</span>
+          <span style="color:#ffd700;">${'★'.repeat(card.star + 1)}</span>
+          <span style="color:#888;font-size:0.65rem;">(${card.star + 1}/${maxStar})</span>
+        </div>`;
+      document.getElementById('upgradeMask').style.display = 'flex';
+    }
+
+    document.getElementById('btnUpgradeCancel').addEventListener('click', () => {
+      document.getElementById('upgradeMask').style.display = 'none';
+      selectedUpgradeCards = [];
+    });
+
+    document.getElementById('btnUpgradeConfirm').addEventListener('click', debounce(async () => {
+      if (isUpgrading || selectedUpgradeCards.length !== 2) return;
+      isUpgrading = true;
+      const res = await API.post('/api/player/upgrade', {
+        card_uid_1: selectedUpgradeCards[0],
+        card_uid_2: selectedUpgradeCards[1]
+      });
+      isUpgrading = false;
+      document.getElementById('upgradeMask').style.display = 'none';
+      if (res.code !== 0) { showToast(res.msg || '升星失败'); selectedUpgradeCards = []; return; }
+      showToast('升星成功! ' + res.data.new_card.role_name + ' → ' + res.data.new_card.star + '星');
+      selectedUpgradeCards = [];
+      document.getElementById('detailMask').style.display = 'none';
+      await loadData();
+    }, 800));
+
+    // ===== 一键合成 =====
+    document.getElementById('btnOneClickUpgrade').addEventListener('click', debounce(async () => {
+      const res = await API.post('/api/player/upgrade-all', {});
+      if (res.code !== 0) { showToast(res.msg || '合成失败'); return; }
+      const total = res.data.totalUpgrades;
+      if (total === 0) {
+        showToast('暂无可合成的卡牌');
+        return;
+      }
+      const details = res.data.details || [];
+      const preview = details.map(d => {
+        const color = gradeColor(d.grade);
+        return `<div class="upgrade-card-info">
+          <span class="grade-tag grade-${d.grade}">${d.grade}</span>
+          <span style="color:${color};">${d.role_name}</span>
+          <span style="color:#888;">${d.from}★</span>
+          <span style="color:#ffd700;">→ ${d.to}★</span>
+        </div>`;
+      }).join('');
+      document.getElementById('upgradeAllPreview').innerHTML = `<div style="font-size:0.75rem;color:#ffd700;margin-bottom:0.3rem;">共合成 ${total} 次</div>` + preview;
+      document.getElementById('upgradeAllMask').style.display = 'flex';
+      await loadData();
+    }, 800));
+
+    document.getElementById('btnUpgradeAllClose').addEventListener('click', () => {
+      document.getElementById('upgradeAllMask').style.display = 'none';
+    });
+
+    // ===== 一键分解模式 =====
+    document.getElementById('btnDecompose').addEventListener('click', () => {
+      decomposeMode = !decomposeMode;
+      decomposeSelected.clear();
+      const btn = document.getElementById('btnDecompose');
+      if (decomposeMode) {
+        btn.textContent = '退出分解';
+        btn.style.background = '#ff5252';
+        btn.style.color = '#fff';
+      } else {
+        btn.textContent = '一键分解';
+        btn.style.background = '';
+        btn.style.color = '#ff5252';
+      }
+      renderOwnedCards();
+    });
+
+    function toggleDecomposeSelect(uid) {
+      const card = allCards.find(c => c.card_uid === uid);
+      if (!card) return;
+      // 出战阵容中的卡牌不可分解
+      const deckUids = [deck[1], deck[2], deck[3]].filter(Boolean);
+      if (deckUids.includes(uid)) {
+        showToast('出战阵容中的卡牌无法分解');
+        return;
+      }
+      if (decomposeSelected.has(uid)) {
+        decomposeSelected.delete(uid);
+      } else {
+        decomposeSelected.add(uid);
+      }
+      renderOwnedCards();
+
+      // 如果有选中卡牌，弹出确认弹窗
+      if (decomposeSelected.size > 0) {
+        showDecomposeConfirm();
+      } else {
+        document.getElementById('decomposeMask').style.display = 'none';
+      }
+    }
+
+    function showDecomposeConfirm() {
+      const selected = allCards.filter(c => decomposeSelected.has(c.card_uid));
+      // 计算奖励（星级系数：1星×1, 2星×2, 3星×4, ...）
+      const baseRewards = { B: { gold: 50, shard: 50, diamond: 0 }, A: { gold: 100, shard: 100, diamond: 0 }, S: { gold: 0, shard: 0, diamond: 100 } };
+      let totalGold = 0, totalShard = 0, totalDiamond = 0;
+      const gradeCount = { B: 0, A: 0, S: 0 };
+      for (const c of selected) {
+        const starMultiplier = Math.pow(2, (c.star || 1) - 1);
+        const r = baseRewards[c.grade] || { gold: 0, shard: 0, diamond: 0 };
+        totalGold += r.gold * starMultiplier;
+        totalShard += r.shard * starMultiplier;
+        totalDiamond += r.diamond * starMultiplier;
+        gradeCount[c.grade] = (gradeCount[c.grade] || 0) + 1;
+      }
+      const parts = [];
+      if (gradeCount.B > 0) parts.push(`B×${gradeCount.B}: +${totalGold}金币 +${totalShard}碎片`);
+      else if (gradeCount.A > 0) parts.push(`A×${gradeCount.A}: +${totalGold}金币 +${totalShard}碎片`);
+      else if (gradeCount.S > 0) parts.push(`S×${gradeCount.S}: +${totalDiamond}钻石`);
+      document.getElementById('decomposeReward').innerHTML =
+        `<div style="margin-bottom:0.3rem;">分解 ${selected.length} 张卡牌</div>` +
+        `<div style="color:#ffd700;">总计: 金币+${totalGold} | 碎片+${totalShard} | 钻石+${totalDiamond}</div>`;
+      document.getElementById('decomposeMask').style.display = 'flex';
+    }
+
+    document.getElementById('btnDecomposeCancel').addEventListener('click', () => {
+      document.getElementById('decomposeMask').style.display = 'none';
+    });
+
+    document.getElementById('btnDecomposeConfirm').addEventListener('click', debounce(async () => {
+      if (decomposeSelected.size === 0) return;
+      const res = await API.post('/api/player/decompose', { card_uids: Array.from(decomposeSelected) });
+      document.getElementById('decomposeMask').style.display = 'none';
+      if (res.code !== 0) { showToast(res.msg || '分解失败'); return; }
+      showToast(`分解成功! 金币+${res.data.gold} 碎片+${res.data.shard} 钻石+${res.data.diamond}`);
+      decomposeMode = false;
+      decomposeSelected.clear();
+      const btn = document.getElementById('btnDecompose');
+      btn.textContent = '一键分解';
+      btn.style.background = '';
+      btn.style.color = '#ff5252';
+      await loadData();
+    }, 800));
+
+    // ===== 加载数据 =====
+    async function loadData() {
+      const infoRes = await API.get('/api/player/info');
+      if (infoRes.code === 0) {
+        document.getElementById('nicknameDisplay').textContent = infoRes.data.nickname;
+      }
+      const cardsRes = await API.get('/api/player/cards');
+      if (cardsRes.code !== 0) { showToast(cardsRes.msg || '卡牌加载失败'); return; }
+      allCards = cardsRes.data || [];
+      const deckRes = await API.get('/api/player/deck');
+      if (deckRes.code === 0) {
+        const d = deckRes.data;
+        deck[1] = d.slot1_card || null;
+        deck[2] = d.slot2_card || null;
+        deck[3] = d.slot3_card || null;
+      }
+      renderSlots();
+      renderOwnedCards();
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

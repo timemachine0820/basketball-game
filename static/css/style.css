@@ -1,0 +1,952 @@
+/* 全局像素风基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Courier New', monospace;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  image-rendering: pixelated;
+}
+
+/* 像素风按钮 */
+.pixel-btn {
+  display: block;
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  border: 3px solid #4a4a8a;
+  border-radius: 4px;
+  background: #3a3a6a;
+  color: #fff;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.pixel-btn:active {
+  background: #5a5aaa;
+  border-color: #7a7acc;
+  transform: translateY(1px);
+}
+
+.pixel-btn.primary {
+  background: #4a7a2e;
+  border-color: #6a9a4e;
+}
+
+.pixel-btn.primary:active {
+  background: #6a9a4e;
+}
+
+.pixel-btn.danger {
+  background: #8a3a3a;
+  border-color: #aa5a5a;
+}
+
+/* 像素风输入框 */
+.pixel-input {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 3px solid #4a4a8a;
+  border-radius: 4px;
+  background: #0d0d1a;
+  color: #e0e0e0;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  outline: none;
+}
+
+.pixel-input:focus {
+  border-color: #6a9aff;
+}
+
+.pixel-input::placeholder {
+  color: #666;
+}
+
+/* 登录注册容器 */
+.auth-container {
+  max-width: 22rem;
+  margin: 0 auto;
+  padding: 2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-logo {
+  font-size: 1.6rem;
+  color: #ff9800;
+  margin-bottom: 0.4rem;
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 2px;
+}
+
+.auth-subtitle {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 2rem;
+}
+
+.auth-form {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: 0.3rem;
+}
+
+.form-group .pixel-input {
+  padding: 0.8rem;
+  font-size: 1rem;
+}
+
+.auth-btn {
+  margin-top: 1.2rem;
+}
+
+.auth-link {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #6a9aff;
+  text-decoration: none;
+}
+
+.auth-link:active {
+  color: #8abaff;
+}
+
+/* 弹窗提示 */
+.pixel-toast {
+  position: fixed;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 9999;
+}
+
+.pixel-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 像素风边框装饰 */
+.pixel-border {
+  border: 3px solid #4a4a8a;
+  border-radius: 4px;
+  padding: 1rem;
+  background: #12122a;
+}
+
+/* 卡牌品级标签 */
+.grade-tag {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.grade-B { background: #8bc34a; color: #000; }
+.grade-A { background: #2196f3; color: #fff; }
+.grade-S { background: #ff9800; color: #000; }
+
+/* 面板标题 */
+.panel-title {
+  font-size: 1rem;
+  color: #ff9800;
+  border-bottom: 2px solid #4a4a8a;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+/* 列表项 */
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+/* 底部导航栏 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: #0d0d1a;
+  border-top: 3px solid #4a4a8a;
+  z-index: 100;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0;
+  color: #888;
+  font-size: 0.65rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-item.active {
+  color: #ff9800;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  margin-bottom: 0.15rem;
+}
+
+/* ========== 个人主页样式 ========== */
+
+/* 顶部标题栏 */
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: #0d0d1a;
+  border-bottom: 3px solid #4a4a8a;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.home-title {
+  font-size: 1rem;
+  color: #ff9800;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+}
+
+.home-nickname {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+/* 主内容区 */
+.home-content {
+  padding: 0.8rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+/* 个人资料卡片 */
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profile-avatar {
+  flex-shrink: 0;
+  width: 3.6rem;
+  height: 3.6rem;
+  background: #1a1a2e;
+  border: 3px solid #4a4a8a;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 1.1rem;
+  color: #ff9800;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-id {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 0.15rem;
+}
+
+.profile-season {
+  font-size: 0.7rem;
+  color: #6a9aff;
+  margin-top: 0.15rem;
+}
+
+/* 资源面板网格 */
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+}
+
+.resource-item {
+  text-align: center;
+  padding: 0.6rem 0.3rem;
+  transition: background 0.15s;
+}
+
+.resource-item:active {
+  background: #1a1a3a;
+}
+
+.resource-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0 auto 0.3rem;
+  border-radius: 3px;
+  image-rendering: pixelated;
+}
+
+/* 金币图标：像素方块金币 */
+.gold-icon {
+  background: linear-gradient(135deg, #ffd700 0%, #ff9800 50%, #e68a00 100%);
+  box-shadow: inset -2px -2px 0 #c87000, inset 2px 2px 0 #ffe44d;
+  border-radius: 2px;
+}
+
+/* 钻石图标：像素菱形 */
+.diamond-icon {
+  background: linear-gradient(135deg, #00e5ff 0%, #2196f3 50%, #1565c0 100%);
+  box-shadow: inset -2px -2px 0 #0d47a1, inset 2px 2px 0 #80d8ff;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* 碎片图标：像素六角碎片 */
+.shard-icon {
+  background: linear-gradient(135deg, #ab47bc 0%, #7b1fa2 50%, #4a148c 100%);
+  box-shadow: inset -2px -2px 0 #38006b, inset 2px 2px 0 #ce93d8;
+  border-radius: 3px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.resource-label {
+  font-size: 0.6rem;
+  color: #888;
+  margin-bottom: 0.15rem;
+}
+
+.resource-value {
+  font-size: 1rem;
+  color: #e0e0e0;
+  font-weight: bold;
+}
+
+/* 抽卡统计面板 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0.8rem 0.3rem;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  color: #fff;
+  font-weight: bold;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  color: #888;
+  margin-top: 0.3rem;
+}
+
+/* ========== 抽卡页面样式 ========== */
+
+/* 资源概览条 */
+.draw-resource-bar {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.draw-resource-bar b {
+  color: #ff9800;
+}
+
+/* 卡池切换标签 */
+.pool-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.pool-tab {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem 0;
+  font-size: 0.8rem;
+  border: 3px solid #4a4a8a;
+  border-radius: 4px;
+  background: #1a1a2e;
+  color: #888;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pool-tab.active {
+  background: #3a3a6a;
+  color: #ff9800;
+  border-color: #ff9800;
+}
+
+/* 概率说明 */
+.pool-info {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #aaa;
+  padding: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+/* 抽卡按钮组 */
+.draw-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.draw-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.8rem 0.5rem;
+}
+
+.draw-cost {
+  display: block;
+  font-size: 0.65rem;
+  color: #ccc;
+  margin-top: 0.2rem;
+}
+
+/* 抽卡结果 */
+.draw-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.draw-result-card {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+}
+
+/* 近10抽记录 */
+.draw-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.draw-history-empty {
+  text-align: center;
+  color: #666;
+  font-size: 0.75rem;
+  padding: 1rem;
+}
+
+.draw-history-item {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+}
+
+/* ========== 卡牌仓库页面样式 ========== */
+
+/* 卡牌统计条 */
+.cards-stat-bar {
+  text-align: center;
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.cards-stat-bar b {
+  color: #ff9800;
+}
+
+/* 筛选行 */
+.filter-row {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tab {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.7rem;
+  border: 2px solid #4a4a8a;
+  border-radius: 3px;
+  background: #1a1a2e;
+  color: #888;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filter-tab.active {
+  background: #3a3a6a;
+  color: #ff9800;
+  border-color: #ff9800;
+}
+
+.grade-filter-B.active { color: #8bc34a; border-color: #8bc34a; }
+.grade-filter-A.active { color: #2196f3; border-color: #2196f3; }
+.grade-filter-S.active { color: #ff9800; border-color: #ff9800; }
+
+/* 卡牌网格 */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  min-height: 4rem;
+}
+
+.cards-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+  padding: 2rem 0;
+}
+
+/* 像素卡牌 */
+.card-pixel {
+  padding: 0.6rem;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.card-pixel:active {
+  transform: scale(0.96);
+}
+
+.card-pixel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.card-pixel-pos {
+  font-size: 0.6rem;
+  color: #888;
+}
+
+.card-pixel-name {
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-pixel-stars {
+  text-align: center;
+  font-size: 0.6rem;
+  color: #ffd700;
+  letter-spacing: 1px;
+}
+
+/* 分页控制 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.page-btn {
+  width: auto;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+}
+
+.page-info {
+  font-size: 0.75rem;
+  color: #aaa;
+  min-width: 3rem;
+  text-align: center;
+}
+
+/* 卡牌详情弹窗 */
+.card-detail-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.card-detail-panel {
+  width: 90%;
+  max-width: 20rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.card-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-detail-name {
+  font-size: 1.1rem;
+  font-weight: bold;
+  flex: 1;
+}
+
+.card-detail-close {
+  font-size: 1.4rem;
+  color: #888;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-detail-pos {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: 0.3rem;
+}
+
+.card-detail-stars {
+  font-size: 0.85rem;
+  color: #ffd700;
+  margin-bottom: 0.6rem;
+}
+
+/* 属性条 */
+.detail-attr-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.detail-attr-name {
+  font-size: 0.65rem;
+  color: #aaa;
+  width: 2.2rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.detail-attr-bar-bg {
+  flex: 1;
+  height: 0.4rem;
+  background: #1a1a2e;
+  border: 1px solid #4a4a8a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.detail-attr-bar {
+  height: 100%;
+  border-radius: 1px;
+}
+
+.detail-attr-val {
+  font-size: 0.65rem;
+  color: #e0e0e0;
+  width: 1.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.detail-talent {
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+  border: 1px dashed #ff9800;
+  border-radius: 3px;
+  text-align: center;
+}
+
+.detail-talent-title {
+  font-size: 0.7rem;
+  color: #ff9800;
+  margin-bottom: 0.2rem;
+}
+
+.detail-talent-desc {
+  font-size: 0.6rem;
+  color: #aaa;
+}
+
+/* 区块标题 */
+.detail-section-title {
+  font-size: 0.75rem;
+  color: #ff9800;
+  border-bottom: 1px solid #4a4a8a;
+  padding-bottom: 0.2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+/* 星级成长预览表 */
+.detail-growth-title {
+  font-size: 0.75rem;
+  color: #ff9800;
+  border-bottom: 1px solid #4a4a8a;
+  padding-bottom: 0.2rem;
+  margin-top: 0.6rem;
+  margin-bottom: 0.3rem;
+}
+
+.detail-growth-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.detail-growth-header,
+.detail-growth-row {
+  display: flex;
+  align-items: center;
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.detail-growth-header {
+  color: #888;
+  border-bottom: 1px solid #2a2a4a;
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
+}
+
+.detail-growth-row {
+  padding: 0.12rem 0;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.growth-col-attr {
+  width: 2.2rem;
+  text-align: right;
+  padding-right: 0.3rem;
+  color: #aaa;
+  flex-shrink: 0;
+}
+
+.growth-col-star {
+  flex: 1;
+  text-align: center;
+  color: #e0e0e0;
+}
+
+.growth-col-current {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+/* 操作栏 */
+.action-bar {
+  margin-bottom: 0.6rem;
+}
+
+.action-btn {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* 卡牌选中状态 */
+.card-selected {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 0 2px #ffd700;
+}
+
+/* 升星合成确认弹窗 */
+.upgrade-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.upgrade-panel {
+  width: 90%;
+  max-width: 18rem;
+}
+
+.upgrade-title {
+  font-size: 0.95rem;
+  color: #ff9800;
+  text-align: center;
+  margin-bottom: 0.6rem;
+}
+
+.upgrade-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.upgrade-card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.upgrade-result {
+  border: 1px dashed #ffd700;
+  padding: 0.3rem 0.5rem;
+  border-radius: 3px;
+}
+
+.upgrade-arrow {
+  font-size: 1rem;
+  color: #ff9800;
+}
+
+.upgrade-btn-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.upgrade-btn-group .pixel-btn {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* 响应式：小屏适配 */
+@media screen and (max-width: 20rem) {
+  html { font-size: 14px; }
+  .auth-container { padding: 1.5rem 1rem; }
+}
+
+@media screen and (min-width: 480px) {
+  html { font-size: 18px; }
+}
+
+@media screen and (min-width: 768px) {
+  html { font-size: 20px; }
+  .auth-container {
+    max-width: 24rem;
+    margin-top: 5vh;
+  }
+}
+
+/* S级球员详情图片 */
+.s-card-image {
+  width: 100%;
+  max-height: 10rem;
+  object-fit: contain;
+  image-rendering: pixelated;
+  margin: 0.3rem 0 0.5rem;
+  border: 2px solid #ffd700;
+  border-radius: 4px;
+  background: #12122a;
+}
+
+/* S级抽卡闪光动画（炉石传说传说卡风格） */
+@keyframes s-glow-pulse {
+  0%   { box-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700; }
+  25%  { box-shadow: 0 0 12px #ffd700, 0 0 24px #ffaa00, 0 0 36px #ff6600; }
+  50%  { box-shadow: 0 0 20px #ffd700, 0 0 40px #ffaa00, 0 0 50px #ff6600; }
+  75%  { box-shadow: 0 0 12px #ffd700, 0 0 24px #ffaa00, 0 0 36px #ff6600; }
+  100% { box-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700; }
+}
+
+@keyframes s-border-flash {
+  0%   { border-color: #ffd700; }
+  25%  { border-color: #ffaa00; }
+  50%  { border-color: #ff6600; }
+  75%  { border-color: #ffaa00; }
+  100% { border-color: #ffd700; }
+}
+
+@keyframes s-text-glow {
+  0%   { text-shadow: 0 0 4px #ffd700; }
+  50%  { text-shadow: 0 0 8px #ffd700, 0 0 16px #ffaa00; }
+  100% { text-shadow: 0 0 4px #ffd700; }
+}
+
+.draw-s-flash {
+  animation: s-glow-pulse 1.5s ease-in-out infinite, s-border-flash 1.5s ease-in-out infinite;
+  border-width: 3px;
+  border-style: solid;
+  position: relative;
+}
+
+.draw-s-flash .grade-tag {
+  animation: s-text-glow 1.5s ease-in-out infinite;
+}
+
+/* 抽卡结果中S级特殊高亮 */
+.draw-result-card.draw-s-flash {
+  background: linear-gradient(135deg, #2a1a00 0%, #1a1200 50%, #2a1a00 100%);
+}
