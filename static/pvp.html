@@ -487,6 +487,38 @@
       width: 100%;
       margin-bottom: 0.5rem;
     }
+    .pvp-mode-switch {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .mode-btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.6rem 0.3rem;
+      background: #1a1a2e;
+      border: 3px solid #4a4a8a;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #888;
+      transition: all 0.2s;
+    }
+    .mode-btn.selected {
+      border-color: #ff9800;
+      color: #ff9800;
+      background: #2a2a4a;
+    }
+    .mode-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.2rem;
+    }
+    .rank-badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.6rem;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -521,6 +553,20 @@
       <div id="dailyWinList"></div>
     </div>
 
+    <!-- 对战模式切换 -->
+    <div class="pvp-mode-switch" style="margin-bottom:0.5rem;">
+      <div class="mode-btn selected" data-mode="casual" onclick="switchPvpMode('casual')">
+        <div class="mode-icon">&#991;</div>
+        <div>娱乐模式</div>
+        <div style="font-size:0.55rem;color:#888;">无次数限制·无奖励</div>
+      </div>
+      <div class="mode-btn" data-mode="ranked" onclick="switchPvpMode('ranked')">
+        <div class="mode-icon">&#9733;</div>
+        <div>排位模式</div>
+        <div style="font-size:0.55rem;color:#888;" id="rankedRemainingInfo">每日10次·排位积分</div>
+      </div>
+    </div>
+
     <!-- Tab 切换 -->
     <div class="pvp-tab-bar">
       <div class="pvp-tab active" data-tab="opponents">挑战对手</div>
@@ -537,6 +583,12 @@
         <div id="myTeamCards"></div>
       </div>
 
+      <div class="pixel-border" style="padding:0.4rem;margin-bottom:0.5rem;" id="myRankInfo">
+        <span style="font-size:0.7rem;color:#888;">当前段位：</span>
+        <span id="myRankLabel" class="rank-badge" style="background:#7a7a7a;color:#fff;">-</span>
+        <span style="font-size:0.7rem;color:#aaa;margin-left:0.3rem;" id="myRankPoints">0分</span>
+      </div>
+
       <!-- 对手列表 -->
       <div class="panel-title">选择对手</div>
       <div class="filter-row" style="margin-bottom:0.3rem;">
@@ -546,9 +598,11 @@
     </div>
 
     <!-- 排行榜面板 -->
+    <div id="rankSection" style="display:none;">
     <div class="pvp-section" id="secLeaderboard">
       <div class="panel-title">赛季排行榜 TOP20</div>
       <div id="leaderboardList"></div>
+    </div>
     </div>
 
     <!-- 今日数据面板 -->
@@ -629,7 +683,17 @@
 
     let cooldownTimer = null;
     let cooldownRemain = 0;
-    let pvpCooldownActive = false; // 标记是否由战斗触发的冷却
+    let pvpCooldownActive = false;
+    let currentMode = 'casual';
+
+    function switchPvpMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.mode === mode);
+      });
+      loadOpponents();
+      document.getElementById('rankSection').style.display = mode === 'ranked' ? 'block' : 'none';
+    }
 
     // 导航
     document.getElementById('navHome').addEventListener('click', () => { window.location.href = 'home.html'; });
@@ -705,13 +769,22 @@
     let allOpponents = [];
 
     async function loadOpponents() {
-      const res = await API.get('/api/pvp/opponents');
+      const res = await API.get(`/api/pvp/opponents?mode=${currentMode}`);
       if (res.code !== 0) {
         showToast(res.msg);
         return;
       }
 
       document.getElementById('myPoints').textContent = res.data.myPoints;
+
+      if (res.data.myRank) {
+        document.getElementById('myRankLabel').textContent = res.data.myRank.label;
+        document.getElementById('myRankLabel').style.background = res.data.myRank.color;
+        document.getElementById('myRankPoints').textContent = res.data.myRank.points + '分';
+      }
+      if (res.data.rankedRemaining !== undefined) {
+        document.getElementById('rankedRemainingInfo').textContent = `每日10次·剩余${res.data.rankedRemaining}次`;
+      }
 
       // 显示每日剩余次数
       const dailyEl = document.getElementById('pvpDailyRemain');
@@ -759,10 +832,11 @@
 
         return `<div class="pvp-opponent-card">
           <div class="pvp-opp-header">
-            <span class="pvp-opp-name">${opp.nickname}</span>
+            <span class="pvp-opp-name">${opp.nickname}${opp.rankLabel ? `<span class="rank-badge" style="background:${opp.rankColor};color:#fff;margin-left:0.2rem;">${opp.rankLabel}</span>` : ''}</span>
             <span class="pvp-opp-power">战力 ${opp.teamPower}</span>
             <span style="color:#ff9800;font-size:0.65rem;white-space:nowrap;">&#10148;</span>
           </div>
+          ${opp.signature ? `<div style="font-size:0.55rem;color:#aaa;margin-bottom:0.2rem;">${opp.signature}</div>` : ''}
           <div class="pvp-opp-cards">${cardsHtml}</div>
           <button class="pixel-btn primary pvp-challenge-btn" onclick="challengePlayer(${opp.player_id})" ${isDisabled}>
             ${cooldownRemain > 0 ? '冷却中' : '挑战'}
@@ -806,12 +880,12 @@
 
     // 发起挑战
     async function challengePlayer(targetId) {
-      if (cooldownRemain > 0) {
+      if (currentMode === 'ranked' && cooldownRemain > 0) {
         showToast('PVP冷却中，请稍后再试');
         return;
       }
 
-      const res = await API.post('/api/pvp/battle', { target_player_id: targetId });
+      const res = await API.post('/api/pvp/battle', { target_player_id: targetId, mode: currentMode });
       if (res.code !== 0) {
         showToast(res.msg || '挑战失败');
         return;
@@ -830,7 +904,7 @@
       document.getElementById('resultTitle').innerHTML = data.win
         ? '<div class="result-win">胜 利!</div>'
         : '<div class="result-lose">落 败</div>';
-      document.getElementById('resultScore').textContent = data.attScore + ' : ' + data.defScore;
+      document.getElementById('resultScore').textContent = data.attScore + ' : ' + data.defScore + ' | ' + (currentMode === 'ranked' ? '排位赛' : '娱乐赛');
 
       if (data.win) {
         document.getElementById('resultReward').innerHTML =
@@ -839,6 +913,10 @@
       } else {
         document.getElementById('resultReward').innerHTML =
           '<div class="result-reward-label" style="color:#888;">落败不扣积分</div>';
+      }
+
+      if (data.pointChange !== 0) {
+        showToast(currentMode === 'ranked' ? (data.win ? `+${data.pointChange}排位分` : `${data.pointChange}排位分`) : '');
       }
 
       document.getElementById('myStatsBody').innerHTML = data.myCards.map(renderStatsRow).join('');

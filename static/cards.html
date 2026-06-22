@@ -29,9 +29,7 @@
       <span style="font-size:0.6rem;color:#888;">碎片</span>
     </div>
     <div style="display:flex;gap:0.3rem;margin-bottom:0.6rem;padding:0 0.2rem;" id="exchangeRow">
-      <button class="pixel-btn" style="flex:1;font-size:0.65rem;" onclick="openExchangeModal('B')">B级<br><span style="color:#888;font-size:0.55rem;">50碎片</span></button>
-      <button class="pixel-btn" style="flex:1;font-size:0.65rem;" onclick="openExchangeModal('A')">A级<br><span style="color:#888;font-size:0.55rem;">200碎片</span></button>
-      <button class="pixel-btn" style="flex:1;font-size:0.65rem;" onclick="openExchangeModal('S')">S级<br><span style="color:#ffd700;font-size:0.55rem;">1000碎片</span></button>
+      <button class="pixel-btn primary" style="flex:1;font-size:0.65rem;" onclick="openExchangeModal('S')">S级兑换<br><span style="color:#ffd700;font-size:0.55rem;">1000碎片</span></button>
     </div>
 
     <!-- 位置筛选 -->
@@ -414,7 +412,7 @@
     loadData();
 
     // ===== 球星碎片兑换 =====
-    const EXCHANGE_COST = { B: 50, A: 200, S: 1000 };
+    const EXCHANGE_COST = { S: 1000 };
 
     // 打开兑换球员选择弹窗
     function openExchangeModal(grade) {

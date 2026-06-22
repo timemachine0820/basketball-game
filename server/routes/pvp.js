@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb, saveDatabase } = require('../db/database');
-const { RESOURCE_CONFIG, PVP_COOLDOWN_MS, MAX_DEFENSE_LOG, LEADERBOARD_LIMIT } = require('../../config/game-config');
+const { RESOURCE_CONFIG, PVP_COOLDOWN_MS, MAX_DEFENSE_LOG, LEADERBOARD_LIMIT, RANK_TIERS, RANKED_WIN_POINTS, RANKED_LOSE_POINTS } = require('../../config/game-config');
 const {
   calcCardFinalAttrs, calcTeamPower, simulateBattle,
   calcPlayerTeamAttrs, ALL_ROLES
@@ -59,9 +59,18 @@ function authCheck(req, res, next) {
   next();
 }
 
+function getRankTier(points) {
+  let result = RANK_TIERS[0];
+  for (const tier of RANK_TIERS) {
+    if (points >= tier.minPoints) result = tier;
+  }
+  return result;
+}
+
 // GET /api/pvp/opponents - 随机抓取其他玩家阵容作为对手
 router.get('/opponents', authCheck, (req, res) => {
   const db = getDb();
+  const mode = req.query.mode || 'casual';
 
   // 读取当前玩家阵容完整性
   const deckResult = db.exec(
@@ -131,11 +140,17 @@ router.get('/opponents', authCheck, (req, res) => {
       const attrs = calcPlayerTeamAttrs(cards);
       const power = calcTeamPower(attrs);
 
+      const oppSeasonResult = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [pid]);
+      const oppPoints = (oppSeasonResult.length > 0 && oppSeasonResult[0].values.length > 0) ? oppSeasonResult[0].values[0][0] : 0;
+      const oppRank = getRankTier(oppPoints);
+
       opponents.push({
         player_id: pid,
         nickname,
         cards,
-        teamPower: Math.round(power)
+        teamPower: Math.round(power),
+        rankLabel: oppRank.label,
+        rankColor: oppRank.color
       });
     }
   }
@@ -147,10 +162,14 @@ router.get('/opponents', authCheck, (req, res) => {
   );
   const myPoints = (seasonResult.length > 0 && seasonResult[0].values.length > 0)
     ? seasonResult[0].values[0][0] : 0;
+  const myRank = getRankTier(myPoints);
 
   // 读取今日PVP剩余次数
   const dailyUsed = getPvpDailyCount(db, req.playerId);
   const dailyRemaining = Math.max(0, RESOURCE_CONFIG.pvpDailyLimit - dailyUsed);
+
+  const rankedUsed = getPvpDailyCount(db, req.playerId);
+  const rankedRemaining = Math.max(0, RESOURCE_CONFIG.pvpDailyLimit - rankedUsed);
 
   res.json({
     code: 0,
@@ -158,15 +177,18 @@ router.get('/opponents', authCheck, (req, res) => {
       opponents,
       cooldownRemain,
       myPoints,
+      myRank,
       dailyRemaining,
-      dailyLimit: RESOURCE_CONFIG.pvpDailyLimit
+      dailyLimit: RESOURCE_CONFIG.pvpDailyLimit,
+      rankedRemaining
     }
   });
 });
 
 // POST /api/pvp/battle - 发起PVP对战
 router.post('/battle', authCheck, (req, res) => {
-  const { target_player_id } = req.body;
+  const { target_player_id, mode } = req.body;
+  const battleMode = mode || 'casual';
   if (!target_player_id) {
     return res.json({ code: 1, msg: '请选择挑战对手' });
   }
@@ -177,24 +199,26 @@ router.post('/battle', authCheck, (req, res) => {
   const db = getDb();
   const now = Date.now();
 
-  // 1. 检查冷却
-  const cooldownResult = db.exec(
-    "SELECT last_pvp_time FROM players WHERE player_id = ?",
-    [req.playerId]
-  );
-  if (cooldownResult.length > 0 && cooldownResult[0].values.length > 0) {
-    const lastTime = cooldownResult[0].values[0][0] || 0;
-    const elapsed = now - lastTime;
-    if (elapsed < PVP_COOLDOWN_MS) {
-      const remain = Math.ceil((PVP_COOLDOWN_MS - elapsed) / 1000);
-      return res.json({ code: 1, msg: `冷却中，还需${remain}秒` });
+  if (battleMode === 'ranked') {
+    // 1. 检查冷却
+    const cooldownResult = db.exec(
+      "SELECT last_pvp_time FROM players WHERE player_id = ?",
+      [req.playerId]
+    );
+    if (cooldownResult.length > 0 && cooldownResult[0].values.length > 0) {
+      const lastTime = cooldownResult[0].values[0][0] || 0;
+      const elapsed = now - lastTime;
+      if (elapsed < PVP_COOLDOWN_MS) {
+        const remain = Math.ceil((PVP_COOLDOWN_MS - elapsed) / 1000);
+        return res.json({ code: 1, msg: `冷却中，还需${remain}秒` });
+      }
     }
-  }
 
-  // 1.5 检查每日PVP次数
-  const dailyUsed = getPvpDailyCount(db, req.playerId);
-  if (dailyUsed >= RESOURCE_CONFIG.pvpDailyLimit) {
-    return res.json({ code: 1, msg: '今日PVP次数已用完' });
+    // 1.5 检查每日PVP次数
+    const dailyUsed = getPvpDailyCount(db, req.playerId);
+    if (dailyUsed >= RESOURCE_CONFIG.pvpDailyLimit) {
+      return res.json({ code: 1, msg: '今日PVP次数已用完' });
+    }
   }
 
   // 2. 读取我方阵容
@@ -272,16 +296,26 @@ router.post('/battle', authCheck, (req, res) => {
     });
   }
 
-  // 7. 积分变动 + 钻石奖励：仅胜利增加
-  const pointChange = isWin ? RESOURCE_CONFIG.pvpPointWin : 0;
-  const diamondReward = isWin ? RESOURCE_CONFIG.pvpDiamondWin : 0;
+  // 7. 积分变动 + 钻石奖励
+  let pointChange = 0;
+  let diamondReward = 0;
+  const matchType = battleMode === 'ranked' ? 'pvp_ranked' : 'pvp_casual';
+
+  if (battleMode === 'ranked') {
+    if (isWin) {
+      pointChange = RANKED_WIN_POINTS;
+      diamondReward = RESOURCE_CONFIG.pvpDiamondWin;
+    } else {
+      pointChange = -RANKED_LOSE_POINTS;
+    }
+  }
 
   // 8. 写入 match_records
   const winId = isWin ? req.playerId : defPid;
   db.run(
     `INSERT INTO match_records (attacker_id, defender_id, match_type, win_id, att_score, def_score, player_stats_json, point_change, create_time)
-     VALUES (?, ?, 'pvp', ?, ?, ?, ?, ?, ?)`,
-    [req.playerId, defPid, winId, attScore, defScore, JSON.stringify(allPlayerStats), pointChange, now]
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [req.playerId, defPid, matchType, winId, attScore, defScore, JSON.stringify(allPlayerStats), pointChange, now]
   );
 
   // 更新进攻方PVP冷却时间和积分 + 每日次数
@@ -289,18 +323,28 @@ router.post('/battle', authCheck, (req, res) => {
     "UPDATE players SET last_pvp_time = ? WHERE player_id = ?",
     [now, req.playerId]
   );
-  incrementPvpDailyCount(db, req.playerId);
-  if (isWin) {
-    db.run(
-      "UPDATE player_season SET season_points = season_points + ? WHERE player_id = ?",
-      [pointChange, req.playerId]
-    );
-    db.run(
-      "UPDATE players SET diamond = diamond + ? WHERE player_id = ?",
-      [diamondReward, req.playerId]
-    );
-    // 首胜真人成就检测
-    finishAchievement(req.playerId, 'first_pvp_win');
+  if (battleMode === 'ranked') {
+    incrementPvpDailyCount(db, req.playerId);
+    if (isWin) {
+      db.run(
+        "UPDATE player_season SET season_points = season_points + ? WHERE player_id = ?",
+        [pointChange, req.playerId]
+      );
+      db.run(
+        "UPDATE players SET diamond = diamond + ? WHERE player_id = ?",
+        [diamondReward, req.playerId]
+      );
+      // 首胜真人成就检测
+      finishAchievement(req.playerId, 'first_pvp_win');
+    } else {
+      const curSeasonResult = db.exec("SELECT season_points FROM player_season WHERE player_id = ?", [req.playerId]);
+      const curPoints = (curSeasonResult.length > 0 && curSeasonResult[0].values.length > 0) ? curSeasonResult[0].values[0][0] : 0;
+      const newPoints = Math.max(0, curPoints + pointChange);
+      db.run(
+        "UPDATE player_season SET season_points = ? WHERE player_id = ?",
+        [newPoints, req.playerId]
+      );
+    }
   }
 
   // 10. 写入防守方防守日志（保留最近20条）
@@ -378,6 +422,7 @@ router.post('/battle', authCheck, (req, res) => {
   res.json({
     code: 0,
     data: {
+      mode: battleMode,
       win: isWin,
       attScore,
       defScore,
@@ -400,7 +445,7 @@ router.post('/battle', authCheck, (req, res) => {
 router.get('/leaderboard', authCheck, (req, res) => {
   const db = getDb();
   const result = db.exec(
-    `SELECT p.nickname, ps.season_points
+    `SELECT p.nickname, ps.season_points, p.signature
      FROM player_season ps
      JOIN players p ON p.player_id = ps.player_id
      ORDER BY ps.season_points DESC
@@ -410,11 +455,13 @@ router.get('/leaderboard', authCheck, (req, res) => {
 
   const list = [];
   if (result.length > 0) {
-    list.push(...result[0].values.map((r, i) => ({
-      rank: i + 1,
-      nickname: r[0],
-      points: r[1]
-    })));
+    for (let i = 0; i < result[0].values.length; i++) {
+      const r = result[0].values[i];
+      const points = r[1];
+      const signature = r[2] || '';
+      const rank = getRankTier(points);
+      list.push({ rank: i + 1, nickname: r[0], points, signature, rankLabel: rank.label, rankColor: rank.color });
+    }
   }
 
   res.json({ code: 0, data: { list } });

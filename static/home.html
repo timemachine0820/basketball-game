@@ -61,11 +61,27 @@
       </div>
     </div>
 
-    <!-- 赛季积分入口 -->
+    <!-- 排位等级入口 -->
     <div class="profile-season-bar pixel-border" id="seasonBar" style="display:none;">
-      <span style="font-size:0.7rem;color:#ff9800;">赛季积分</span>
-      <span style="font-size:0.85rem;color:#ffd700;font-weight:bold;" id="homeSeasonPoints">0</span>
+      <span style="font-size:0.7rem;color:#ff9800;">排位等级</span>
+      <span class="rank-badge" style="font-size:0.7rem;padding:0.1rem 0.3rem;border-radius:2px;" id="homeRankTier">-</span>
       <span style="font-size:0.65rem;color:#6a9aff;margin-left:auto;" id="goLeaderboard">排行榜 &gt;</span>
+    </div>
+
+    <!-- 个人签名 -->
+    <div class="pixel-border" style="margin-bottom:0.5rem;padding:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.3rem;">
+        <span style="font-size:0.7rem;color:#888;">个人签名：</span>
+        <span id="signatureText" style="font-size:0.8rem;color:#e0e0e0;flex:1;">未设置</span>
+        <button class="pixel-btn" style="width:auto;display:inline-block;padding:0.2rem 0.5rem;font-size:0.6rem;" onclick="editSignature()">编辑</button>
+      </div>
+      <div id="signatureEdit" style="display:none;margin-top:0.3rem;">
+        <input type="text" id="signatureInput" class="pixel-input" maxlength="20" placeholder="最多20个字" style="font-size:0.7rem;">
+        <div style="display:flex;gap:0.3rem;margin-top:0.3rem;">
+          <button class="pixel-btn primary" style="flex:1;font-size:0.65rem;" onclick="saveSignature()">保存</button>
+          <button class="pixel-btn" style="flex:1;font-size:0.65rem;" onclick="cancelSignature()">取消</button>
+        </div>
+      </div>
     </div>
 
     <!-- 成就入口 -->
@@ -217,25 +233,82 @@
         showToast(res.msg || '数据加载失败');
         return;
       }
-      // 更新本地缓存
       localStorage.setItem('nickname', res.data.nickname);
       localStorage.setItem('game_id', res.data.game_id);
       localStorage.setItem('free_draws', res.data.free_draws);
 
       renderProfile(res.data);
 
-      // 加载赛季积分
       const seasonRes = await API.get('/api/player/season');
       if (seasonRes.code === 0) {
-        document.getElementById('homeSeasonPoints').textContent = seasonRes.data.season_points;
+        const rank = getRankTier(seasonRes.data.season_points);
+        const rankEl = document.getElementById('homeRankTier');
+        rankEl.textContent = rank.label;
+        rankEl.style.background = rank.color;
+        rankEl.style.color = '#fff';
         document.getElementById('seasonBar').style.display = 'flex';
       }
 
-      // 加载成就进度
+      loadSignature();
+
       const achRes = await API.get('/api/achievement/list');
       if (achRes.code === 0) {
         const finished = achRes.data.list.filter(a => a.is_finish === 1).length;
         document.getElementById('achieveProgress').textContent = finished + '/4 已完成';
+      }
+    }
+
+    const RANK_TIERS = [
+      { tier: 'iron',      label: '坚韧黑铁', color: '#7a7a7a', minPoints: 0 },
+      { tier: 'bronze',    label: '英勇黄铜', color: '#cd7f32', minPoints: 500 },
+      { tier: 'silver',    label: '不屈白银', color: '#c0c0c0', minPoints: 1200 },
+      { tier: 'gold',      label: '荣耀黄金', color: '#ffd700', minPoints: 2000 },
+      { tier: 'platinum',  label: '华贵铂金', color: '#00e5ff', minPoints: 3000 },
+      { tier: 'emerald',   label: '流光翡翠', color: '#00c853', minPoints: 4200 },
+      { tier: 'diamond',   label: '璀璨钻石', color: '#b388ff', minPoints: 5500 },
+      { tier: 'master',    label: '超凡大师', color: '#ff6d00', minPoints: 7000 }
+    ];
+
+    function getRankTier(points) {
+      let result = RANK_TIERS[0];
+      for (const tier of RANK_TIERS) {
+        if (points >= tier.minPoints) result = tier;
+      }
+      return result;
+    }
+
+    async function loadSignature() {
+      const res = await API.get('/api/player/signature');
+      if (res.code === 0) {
+        const sig = res.data.signature;
+        document.getElementById('signatureText').textContent = sig || '未设置';
+      }
+    }
+
+    function editSignature() {
+      const current = document.getElementById('signatureText').textContent;
+      document.getElementById('signatureInput').value = current === '未设置' ? '' : current;
+      document.getElementById('signatureEdit').style.display = 'block';
+      document.getElementById('signatureInput').focus();
+    }
+
+    function cancelSignature() {
+      document.getElementById('signatureEdit').style.display = 'none';
+    }
+
+    async function saveSignature() {
+      const signature = document.getElementById('signatureInput').value.trim();
+      if (signature.length > 20) {
+        showToast('签名不能超过20个字');
+        return;
+      }
+      const res = await API.post('/api/player/signature', { signature });
+      if (res.code === 0) {
+        document.getElementById('signatureText').textContent = res.data.signature || '未设置';
+        document.getElementById('signatureEdit').style.display = 'none';
+        showToast('签名已更新');
+      } else {
+        showToast(res.msg);
       }
     }
 

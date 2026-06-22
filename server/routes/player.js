@@ -432,8 +432,8 @@ router.post('/upgrade', authCheck, (req, res) => {
 // POST /api/player/exchange-shard - 球星碎片兑换指定卡牌
 router.post('/exchange-shard', authCheck, (req, res) => {
   const { grade, role_name } = req.body;
-  if (!['B', 'A', 'S'].includes(grade)) {
-    return res.json({ code: 1, msg: '无效的品级' });
+  if (grade !== 'S') {
+    return res.json({ code: 1, msg: '仅支持兑换S级球员' });
   }
   if (!role_name) {
     return res.json({ code: 1, msg: '请选择兑换球员' });
@@ -697,6 +697,28 @@ router.post('/decompose', authCheck, (req, res) => {
       updatedDiamond: updated[2]
     }
   });
+});
+
+router.get('/signature', authCheck, (req, res) => {
+  const db = getDb();
+  const result = db.exec("SELECT signature FROM players WHERE player_id = ?", [req.playerId]);
+  const signature = (result.length > 0 && result[0].values.length > 0) ? (result[0].values[0][0] || '') : '';
+  res.json({ code: 0, data: { signature } });
+});
+
+router.post('/signature', authCheck, (req, res) => {
+  const { signature } = req.body;
+  if (typeof signature !== 'string') {
+    return res.json({ code: 1, msg: '签名格式错误' });
+  }
+  const trimmed = signature.trim();
+  if (trimmed.length > 20) {
+    return res.json({ code: 1, msg: '签名不能超过20个字' });
+  }
+  const db = getDb();
+  db.run("UPDATE players SET signature = ? WHERE player_id = ?", [trimmed, req.playerId]);
+  saveDatabase();
+  res.json({ code: 0, msg: '签名已更新', data: { signature: trimmed } });
 });
 
 module.exports = router;

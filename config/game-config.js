@@ -167,7 +167,7 @@ const RESOURCE_CONFIG = {
   trainGoldBias: 150,
   trainDailyLimit: 30,
   eliteGoldReward: 500,
-  eliteShardReward: 200,
+  eliteShardReward: 50,
   eliteDiamondReward: 200,
   pvpDiamondWin: 50,
   pvpPointWin: 10,
@@ -176,20 +176,35 @@ const RESOURCE_CONFIG = {
 
 // 联赛按梯度奖励：碎片+钻石
 const LEAGUE_REWARDS = {
-  bronze: { shard: 20, diamond: 20 },
-  silver: { shard: 50, diamond: 50 },
-  gold:   { shard: 100, diamond: 100 }
+  bronze: { shard: 5, diamond: 20 },
+  silver: { shard: 15, diamond: 50 },
+  gold:   { shard: 30, diamond: 100 }
 };
 
-// 球星碎片兑换配置
+// 球星碎片兑换配置（仅S级可兑换）
 const SHARD_EXCHANGE = {
-  B: { cost: 50 },
-  A: { cost: 200 },
   S: { cost: 1000 }
 };
 
 // PVP冷却时间（毫秒）
 const PVP_COOLDOWN_MS = 5 * 1000;
+
+// 排位等级配置（仿LOL），按积分区间划分
+const RANK_TIERS = [
+  { tier: 'iron',      label: '坚韧黑铁', color: '#7a7a7a', minPoints: 0 },
+  { tier: 'bronze',    label: '英勇黄铜', color: '#cd7f32', minPoints: 500 },
+  { tier: 'silver',    label: '不屈白银', color: '#c0c0c0', minPoints: 1200 },
+  { tier: 'gold',      label: '荣耀黄金', color: '#ffd700', minPoints: 2000 },
+  { tier: 'platinum',  label: '华贵铂金', color: '#00e5ff', minPoints: 3000 },
+  { tier: 'emerald',   label: '流光翡翠', color: '#00c853', minPoints: 4200 },
+  { tier: 'diamond',   label: '璀璨钻石', color: '#b388ff', minPoints: 5500 },
+  { tier: 'master',    label: '超凡大师', color: '#ff6d00', minPoints: 7000 }
+];
+
+// 排位赛胜利积分增加
+const RANKED_WIN_POINTS = 30;
+// 排位赛失败积分减少
+const RANKED_LOSE_POINTS = 15;
 
 // 防守日志最大条数
 const MAX_DEFENSE_LOG = 20;
@@ -293,10 +308,10 @@ const DRAW_COST = {
   premium: { diamond: 10 }   // 高级钻石池单抽消耗
 };
 
-// 分解奖励配置：B=50金币+50碎片, A=100金币+100碎片, S=100钻石
+// 分解奖励配置：B=30金币+10碎片, A=60金币+20碎片, S=100钻石
 const DECOMPOSE_REWARD = {
-  B: { gold: 50, shard: 50, diamond: 0 },
-  A: { gold: 100, shard: 100, diamond: 0 },
+  B: { gold: 30, shard: 10, diamond: 0 },
+  A: { gold: 60, shard: 20, diamond: 0 },
   S: { gold: 0, shard: 0, diamond: 100 }
 };
 
@@ -329,6 +344,9 @@ if (typeof module !== 'undefined' && module.exports) {
     ACHIEVEMENTS,
     S_ROLE_NICKNAME,
     S_ROLE_IMAGE,
-    DECOMPOSE_REWARD
+    DECOMPOSE_REWARD,
+    RANK_TIERS,
+    RANKED_WIN_POINTS,
+    RANKED_LOSE_POINTS
   };
 }

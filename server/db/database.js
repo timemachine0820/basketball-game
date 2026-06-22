@@ -200,6 +200,12 @@ function migrateTable() {
   if (!hasLastPvpTime) {
     db.run("ALTER TABLE players ADD COLUMN last_pvp_time INTEGER DEFAULT 0");
   }
+
+  // 玩家签名
+  const hasSignature = cols.length > 0 && cols[0].values.some(r => r[1] === 'signature');
+  if (!hasSignature) {
+    db.run("ALTER TABLE players ADD COLUMN signature TEXT DEFAULT ''");
+  }
 }
 
 function saveDatabase() {

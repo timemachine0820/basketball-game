@@ -197,8 +197,13 @@
         const isMe = myPlayerId && item.nickname === localStorage.getItem('nickname');
         return `<div class="lb-item${isMe ? ' me' : ''}">
           <span class="lb-rank-num ${rankClass}">${rankText}</span>
-          <span class="lb-nick${isMe ? ' me-nick' : ''}">${item.nickname}</span>
-          <span class="lb-score">${item.points} 分</span>
+          <span class="lb-nick${isMe ? ' me-nick' : ''}">${item.nickname}
+            ${item.signature ? `<span style="font-size:0.55rem;color:#aaa;margin-left:0.2rem;">${item.signature}</span>` : ''}
+          </span>
+          <span>
+            <span class="rank-badge" style="background:${item.rankColor};color:#fff;font-size:0.6rem;padding:0.1rem 0.3rem;border-radius:2px;">${item.rankLabel}</span>
+            <span class="lb-score" style="margin-left:0.2rem;">${item.points} 分</span>
+          </span>
         </div>`;
       }).join('');
     }

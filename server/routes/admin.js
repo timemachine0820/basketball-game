@@ -15,7 +15,10 @@ const {
   STAR_LIMIT,
   GROWTH_PER_STAR,
   S_TALENT_MULTIPLIER,
-  NEWBIE_FREE_DRAWS
+  NEWBIE_FREE_DRAWS,
+  RANK_TIERS,
+  RANKED_WIN_POINTS,
+  RANKED_LOSE_POINTS
 } = require('../../config/game-config');
 
 function adminAuthCheck(req, res, next) {
@@ -169,7 +172,10 @@ router.get('/game-config', adminAuthCheck, (req, res) => {
       starLimit: STAR_LIMIT,
       growthPerStar: GROWTH_PER_STAR,
       sTalentMultiplier: S_TALENT_MULTIPLIER,
-      newbieFreeDraws: NEWBIE_FREE_DRAWS
+      newbieFreeDraws: NEWBIE_FREE_DRAWS,
+      rankTiers: RANK_TIERS,
+      rankedWinPoints: RANKED_WIN_POINTS,
+      rankedLosePoints: RANKED_LOSE_POINTS
     }
   });
 });
