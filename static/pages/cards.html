@@ -45,9 +45,11 @@
     <!-- 品级筛选 -->
     <div class="filter-row">
       <div class="filter-tab active" data-filter="grade" data-value="ALL">全部</div>
-      <div class="filter-tab grade-filter-B" data-filter="grade" data-value="B">B</div>
-      <div class="filter-tab grade-filter-A" data-filter="grade" data-value="A">A</div>
+      <div class="filter-tab grade-filter-SSS" data-filter="grade" data-value="SSS">SSS</div>
+      <div class="filter-tab grade-filter-SS" data-filter="grade" data-value="SS">SS</div>
       <div class="filter-tab grade-filter-S" data-filter="grade" data-value="S">S</div>
+      <div class="filter-tab grade-filter-A" data-filter="grade" data-value="A">A</div>
+      <div class="filter-tab grade-filter-B" data-filter="grade" data-value="B">B</div>
     </div>
 
     <!-- 持有卡牌统计由顶部statBar展示 -->
@@ -276,7 +278,7 @@
       // S级球员图片
       const imgEl = document.getElementById('detailImage');
       if (card.grade === 'S' && S_ROLE_IMAGE[card.role_name]) {
-        imgEl.innerHTML = `<img class="s-card-image" src="assets/${S_ROLE_IMAGE[card.role_name]}" alt="${card.role_name}">`;
+        imgEl.innerHTML = `<img class="s-card-image" src="../assets/${S_ROLE_IMAGE[card.role_name]}" alt="${card.role_name}">`;
       } else {
         imgEl.innerHTML = '';
       }
@@ -449,7 +451,7 @@
           card_uid: idx + 1, pos: role.pos, grade: role.grade,
           role_name: role.name, owned: ownedCardNames.has(role.name)
         }));
-        const gradeOrder = { S: 0, A: 1, B: 2 };
+        const gradeOrder = { SSS: 0, SS: 1, S: 2, A: 3, B: 4 };
         const posOrder = { PG: 0, SG: 1, SF: 2, PF: 3, C: 4 };
         allCards.sort((a, b) => {
           if (gradeOrder[a.grade] !== gradeOrder[b.grade]) return gradeOrder[a.grade] - gradeOrder[b.grade];
