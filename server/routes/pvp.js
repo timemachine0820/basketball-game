@@ -74,14 +74,14 @@ router.get('/opponents', authCheck, (req, res) => {
 
   // 读取当前玩家阵容完整性
   const deckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
   if (deckResult.length === 0 || deckResult[0].values.length === 0) {
     return res.json({ code: 1, msg: '请先设置出战阵容' });
   }
   const deck = deckResult[0].values[0];
-  if (!deck[0] || !deck[1] || !deck[2]) {
+  if (!deck[0] || !deck[1] || !deck[2] || !deck[3] || !deck[4]) {
     return res.json({ code: 1, msg: '阵容未填满，无法进行PVP' });
   }
 
@@ -107,6 +107,7 @@ router.get('/opponents', authCheck, (req, res) => {
      JOIN players p ON p.player_id = td.player_id
      WHERE td.player_id != ?
        AND td.slot1_card IS NOT NULL AND td.slot2_card IS NOT NULL AND td.slot3_card IS NOT NULL
+       AND td.slot4_card IS NOT NULL AND td.slot5_card IS NOT NULL
      ORDER BY p.nickname`,
     [req.playerId]
   );
@@ -121,19 +122,19 @@ router.get('/opponents', authCheck, (req, res) => {
       const nickname = row[1];
 
       const dResult = db.exec(
-        "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+        "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
         [pid]
       );
       if (dResult.length === 0 || dResult[0].values.length === 0) continue;
       const dDeck = dResult[0].values[0];
 
-      const cardUids = [dDeck[0], dDeck[1], dDeck[2]];
+      const cardUids = [dDeck[0], dDeck[1], dDeck[2], dDeck[3], dDeck[4]];
       const cardsResult = db.exec(
         `SELECT card_uid, pos, grade, role_name, star FROM player_cards
          WHERE player_id = ? AND card_uid IN (${cardUids.map(() => '?').join(',')})`,
         [pid, ...cardUids]
       );
-      if (cardsResult.length === 0 || cardsResult[0].values.length !== 3) continue;
+      if (cardsResult.length === 0 || cardsResult[0].values.length !== 5) continue;
 
       const cards = cardsResult[0].values.map(r => ({
         card_uid: r[0], pos: r[1], grade: r[2], role_name: r[3], star: r[4]
@@ -234,24 +235,24 @@ router.post('/battle', authCheck, (req, res) => {
 
   // 2. 读取我方阵容
   const deckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
   if (deckResult.length === 0 || deckResult[0].values.length === 0) {
     return res.json({ code: 1, msg: '未设置出战阵容' });
   }
   const myDeck = deckResult[0].values[0];
-  if (!myDeck[0] || !myDeck[1] || !myDeck[2]) {
+  if (!myDeck[0] || !myDeck[1] || !myDeck[2] || !myDeck[3] || !myDeck[4]) {
     return res.json({ code: 1, msg: '阵容未填满，无法对战' });
   }
 
-  const myUids = [myDeck[0], myDeck[1], myDeck[2]];
+  const myUids = [myDeck[0], myDeck[1], myDeck[2], myDeck[3], myDeck[4]];
   const myCardsResult = db.exec(
     `SELECT card_uid, pos, grade, role_name, star FROM player_cards
      WHERE player_id = ? AND card_uid IN (${myUids.map(() => '?').join(',')})`,
     [req.playerId, ...myUids]
   );
-  if (myCardsResult.length === 0 || myCardsResult[0].values.length !== 3) {
+  if (myCardsResult.length === 0 || myCardsResult[0].values.length !== 5) {
     return res.json({ code: 1, msg: '阵容卡牌数据异常' });
   }
   const myCards = myCardsResult[0].values.map(r => ({
@@ -261,24 +262,24 @@ router.post('/battle', authCheck, (req, res) => {
   // 3. 读取对手阵容
   const defPid = parseInt(target_player_id);
   const defDeckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [defPid]
   );
   if (defDeckResult.length === 0 || defDeckResult[0].values.length === 0) {
     return res.json({ code: 1, msg: '对手阵容不存在' });
   }
   const defDeck = defDeckResult[0].values[0];
-  if (!defDeck[0] || !defDeck[1] || !defDeck[2]) {
+  if (!defDeck[0] || !defDeck[1] || !defDeck[2] || !defDeck[3] || !defDeck[4]) {
     return res.json({ code: 1, msg: '对手阵容不完整' });
   }
 
-  const defUids = [defDeck[0], defDeck[1], defDeck[2]];
+  const defUids = [defDeck[0], defDeck[1], defDeck[2], defDeck[3], defDeck[4]];
   const defCardsResult = db.exec(
     `SELECT card_uid, pos, grade, role_name, star FROM player_cards
      WHERE player_id = ? AND card_uid IN (${defUids.map(() => '?').join(',')})`,
     [defPid, ...defUids]
   );
-  if (defCardsResult.length === 0 || defCardsResult[0].values.length !== 3) {
+  if (defCardsResult.length === 0 || defCardsResult[0].values.length !== 5) {
     return res.json({ code: 1, msg: '对手卡牌数据异常' });
   }
   const defCards = defCardsResult[0].values.map(r => ({
@@ -294,13 +295,13 @@ router.post('/battle', authCheck, (req, res) => {
   const isWin = attScore >= defScore;
 
   const allPlayerStats = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     allPlayerStats.push({
       side: 'attacker', name: myCards[i].role_name, pos: myCards[i].pos,
       grade: myCards[i].grade, star: myCards[i].star, ...attPlayers[i]
     });
   }
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     allPlayerStats.push({
       side: 'defender', name: defCards[i].role_name, pos: defCards[i].pos,
       grade: defCards[i].grade, star: defCards[i].star, ...defPlayers[i]
@@ -479,14 +480,14 @@ router.post('/ranked-match', authCheck, (req, res) => {
   }
 
   const deckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
   if (deckResult.length === 0 || deckResult[0].values.length === 0) {
     return res.json({ code: 1, msg: '未设置出战阵容' });
   }
   const myDeck = deckResult[0].values[0];
-  if (!myDeck[0] || !myDeck[1] || !myDeck[2]) {
+  if (!myDeck[0] || !myDeck[1] || !myDeck[2] || !myDeck[3] || !myDeck[4]) {
     return res.json({ code: 1, msg: '阵容未填满，无法对战' });
   }
 
@@ -498,7 +499,8 @@ router.post('/ranked-match', authCheck, (req, res) => {
      FROM team_deck td
      JOIN players p ON p.player_id = td.player_id
      WHERE td.player_id != ?
-       AND td.slot1_card IS NOT NULL AND td.slot2_card IS NOT NULL AND td.slot3_card IS NOT NULL`,
+       AND td.slot1_card IS NOT NULL AND td.slot2_card IS NOT NULL AND td.slot3_card IS NOT NULL
+       AND td.slot4_card IS NOT NULL AND td.slot5_card IS NOT NULL`,
     [req.playerId]
   );
 
@@ -517,13 +519,13 @@ router.post('/ranked-match', authCheck, (req, res) => {
   const topCandidates = candidates.slice(0, Math.min(5, candidates.length));
   const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)];
 
-  const myUids = [myDeck[0], myDeck[1], myDeck[2]];
+  const myUids = [myDeck[0], myDeck[1], myDeck[2], myDeck[3], myDeck[4]];
   const myCardsResult = db.exec(
     `SELECT card_uid, pos, grade, role_name, star FROM player_cards
      WHERE player_id = ? AND card_uid IN (${myUids.map(() => '?').join(',')})`,
     [req.playerId, ...myUids]
   );
-  if (myCardsResult.length === 0 || myCardsResult[0].values.length !== 3) {
+  if (myCardsResult.length === 0 || myCardsResult[0].values.length !== 5) {
     return res.json({ code: 1, msg: '阵容卡牌数据异常' });
   }
   const myCards = myCardsResult[0].values.map(r => ({
@@ -532,20 +534,20 @@ router.post('/ranked-match', authCheck, (req, res) => {
 
   const defPid = selected.pid;
   const defDeckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [defPid]
   );
   if (defDeckResult.length === 0 || defDeckResult[0].values.length === 0) {
     return res.json({ code: 1, msg: '对手阵容不存在' });
   }
   const defDeck = defDeckResult[0].values[0];
-  const defUids = [defDeck[0], defDeck[1], defDeck[2]];
+  const defUids = [defDeck[0], defDeck[1], defDeck[2], defDeck[3], defDeck[4]];
   const defCardsResult = db.exec(
     `SELECT card_uid, pos, grade, role_name, star FROM player_cards
      WHERE player_id = ? AND card_uid IN (${defUids.map(() => '?').join(',')})`,
     [defPid, ...defUids]
   );
-  if (defCardsResult.length === 0 || defCardsResult[0].values.length !== 3) {
+  if (defCardsResult.length === 0 || defCardsResult[0].values.length !== 5) {
     return res.json({ code: 1, msg: '对手卡牌数据异常' });
   }
   const defCards = defCardsResult[0].values.map(r => ({
@@ -558,13 +560,13 @@ router.post('/ranked-match', authCheck, (req, res) => {
   const isWin = attScore >= defScore;
 
   const allPlayerStats = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     allPlayerStats.push({
       side: 'attacker', name: myCards[i].role_name, pos: myCards[i].pos,
       grade: myCards[i].grade, star: myCards[i].star, ...attPlayers[i]
     });
   }
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     allPlayerStats.push({
       side: 'defender', name: defCards[i].role_name, pos: defCards[i].pos,
       grade: defCards[i].grade, star: defCards[i].star, ...defPlayers[i]

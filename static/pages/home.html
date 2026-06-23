@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>巢湖篮球经理 - 主页</title>
+  <link rel="stylesheet" href="../css/base.css">   <link rel="stylesheet" href="../css/components.css">   <link rel="stylesheet" href="../css/layout.css">   <link rel="stylesheet" href="../css/pages.css">   <link rel="stylesheet" href="../css/animations.css">
+  <style>
+    .profile-season-bar {
+      display: flex;
+      align-items: center;
+      padding: 0.4rem 0.6rem;
+      margin-bottom: 0.5rem;
+      background: #1a1a3e;
+      border-color: #ff9800;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <div class="home-header">
+    <span class="home-title">巢湖篮球经理</span>
+    <span class="home-nickname" id="nicknameDisplay">加载中...</span>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="home-content">
+
+    <!-- 个人资料卡片 -->
+    <div class="profile-card pixel-border">
+      <div class="profile-avatar">
+        <div class="avatar-pixel" id="avatarPixel"></div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name" id="profileName">--</div>
+        <div class="profile-id" id="profileId">--</div>
+        <div class="profile-season" id="profileSeason">赛季 1</div>
+      </div>
+    </div>
+
+    <!-- 资源面板 -->
+    <div class="panel-title">我的资源</div>
+    <div class="resource-grid" id="resourceGrid">
+      <div class="resource-item pixel-border" data-key="gold">
+        <div class="resource-icon gold-icon"></div>
+        <div class="resource-label">金币</div>
+        <div class="resource-value" id="valGold">--</div>
+      </div>
+      <div class="resource-item pixel-border" data-key="diamond">
+        <div class="resource-icon diamond-icon"></div>
+        <div class="resource-label">钻石</div>
+        <div class="resource-value" id="valDiamond">--</div>
+      </div>
+      <div class="resource-item pixel-border" data-key="shard">
+        <div class="resource-icon shard-icon"></div>
+        <div class="resource-label">球星碎片</div>
+        <div class="resource-value" id="valShard">--</div>
+      </div>
+    </div>
+
+    <!-- 排位等级入口 -->
+    <div class="profile-season-bar pixel-border" id="seasonBar" style="display:none;">
+      <span style="font-size:0.7rem;color:#ff9800;">排位等级</span>
+      <span class="rank-badge" style="font-size:0.7rem;padding:0.1rem 0.3rem;border-radius:2px;" id="homeRankTier">-</span>
+      <span style="font-size:0.65rem;color:#6a9aff;margin-left:auto;" id="goLeaderboard">排行榜 &gt;</span>
+    </div>
+
+    <!-- 个人签名 -->
+    <div class="pixel-border" style="margin-bottom:0.5rem;padding:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.3rem;">
+        <span style="font-size:0.7rem;color:#888;">个人签名：</span>
+        <span id="signatureText" style="font-size:0.8rem;color:#e0e0e0;flex:1;">未设置</span>
+        <button class="pixel-btn" style="width:auto;display:inline-block;padding:0.2rem 0.5rem;font-size:0.6rem;" onclick="editSignature()">编辑</button>
+      </div>
+      <div id="signatureEdit" style="display:none;margin-top:0.3rem;">
+        <input type="text" id="signatureInput" class="pixel-input" maxlength="20" placeholder="最多20个字" style="font-size:0.7rem;">
+        <div style="display:flex;gap:0.3rem;margin-top:0.3rem;">
+          <button class="pixel-btn primary" style="flex:1;font-size:0.65rem;" onclick="saveSignature()">保存</button>
+          <button class="pixel-btn" style="flex:1;font-size:0.65rem;" onclick="cancelSignature()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成就入口 -->
+    <div class="profile-season-bar pixel-border" id="achieveBar">
+      <span style="font-size:0.7rem;color:#ff9800;">&#9733; 成就</span>
+      <span style="font-size:0.65rem;color:#888;" id="achieveProgress">0/4 已完成</span>
+      <span style="font-size:0.65rem;color:#6a9aff;margin-left:auto;">查看 &gt;</span>
+    </div>
+
+    <!-- 退出登录 -->
+    <div class="profile-season-bar pixel-border" id="logoutBar" style="cursor:pointer;">
+      <span style="font-size:0.7rem;color:#ff5252;">&#10148; 退出账号</span>
+      <span style="font-size:0.65rem;color:#666;margin-left:auto;">登出</span>
+    </div>
+
+    <!-- 抽卡统计面板 -->
+    <div class="panel-title">抽卡统计</div>
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-item pixel-border">
+        <div class="stat-value" id="valTotalDraw">--</div>
+        <div class="stat-label">总抽卡数</div>
+      </div>
+      <div class="stat-item pixel-border">
+        <div class="stat-value grade-S" id="valTotalS">--</div>
+        <div class="stat-label">S卡出货</div>
+      </div>
+      <div class="stat-item pixel-border">
+        <div class="stat-value" id="valFreeDraws">--</div>
+        <div class="stat-label">剩余抽卡</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="navContainer"></div>
+  <script>renderBottomNav('home');</script>
+
+  <!-- 页面底部留白，避免被导航栏遮挡 -->
+  <div style="height: 4.5rem;"></div>
+
+  <script src="../js/core/router.js"></script>
+  <script src="../js/core/store.js"></script>
+  <script src="../js/components/nav.js"></script>
+  <script src="../js/components/modal.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    // 未登录校验
+    if (!localStorage.getItem('player_id')) {
+      window.location.href = 'index.html';
+    }
+
+    // 导航链接
+    
+    
+    
+    
+
+    // 像素头像生成：根据昵称哈希生成唯一像素图案
+    function generateAvatar(name) {
+      const el = document.getElementById('avatarPixel');
+      const grid = 5;
+      const cellSize = 0.4;
+      el.innerHTML = '';
+      el.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(${grid}, ${cellSize}rem);
+        gap: 2px;
+      `;
+      // 简单哈希
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = ((hash << 5) - hash) + name.charCodeAt(i);
+        hash |= 0;
+      }
+      const hue = Math.abs(hash % 360);
+      const mirror = Math.floor(grid / 2) + 1;
+
+      for (let row = 0; row < grid; row++) {
+        for (let col = 0; col < mirror; col++) {
+          const filled = ((hash >> (row * grid + col)) & 1) === 1;
+          const pixel = document.createElement('div');
+          pixel.style.cssText = `
+            width: ${cellSize}rem;
+            height: ${cellSize}rem;
+            background: ${filled ? `hsl(${hue}, 60%, 50%)` : 'transparent'};
+            border-radius: 1px;
+          `;
+          el.appendChild(pixel);
+        }
+      }
+    }
+
+    // 渲染个人主页数据
+    function renderProfile(data) {
+      document.getElementById('nicknameDisplay').textContent = data.nickname;
+      document.getElementById('profileName').textContent = data.nickname;
+      document.getElementById('profileId').textContent = 'ID: ' + data.game_id;
+      document.getElementById('profileSeason').textContent = '赛季 ' + data.current_season;
+
+      document.getElementById('valGold').textContent = formatNumber(data.gold);
+      document.getElementById('valDiamond').textContent = formatNumber(data.diamond);
+      document.getElementById('valShard').textContent = formatNumber(data.upgrade_shard);
+
+      document.getElementById('valTotalDraw').textContent = formatNumber(data.total_draw);
+      document.getElementById('valTotalS').textContent = data.total_s;
+      document.getElementById('valFreeDraws').textContent = data.free_draws;
+
+      generateAvatar(data.nickname);
+    }
+
+    // 页面加载时拉取玩家信息
+    // 赛季积分 + 排行榜入口
+    document.getElementById('goLeaderboard').addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.location.href = 'leaderboard.html';
+    });
+    document.getElementById('seasonBar').addEventListener('click', () => {
+      window.location.href = 'leaderboard.html';
+    });
+    document.getElementById('achieveBar').addEventListener('click', () => {
+      window.location.href = 'achievement.html';
+    });
+    document.getElementById('logoutBar').addEventListener('click', () => {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    });
+
+    async function loadPlayerInfo() {
+      const res = await API.get('/api/player/info');
+      if (res.code !== 0) {
+        showToast(res.msg || '数据加载失败');
+        return;
+      }
+      localStorage.setItem('nickname', res.data.nickname);
+      localStorage.setItem('game_id', res.data.game_id);
+      localStorage.setItem('free_draws', res.data.free_draws);
+
+      renderProfile(res.data);
+
+      const seasonRes = await API.get('/api/player/season');
+      if (seasonRes.code === 0) {
+        const points = seasonRes.data.season_points;
+        const rank = getRankTier(points);
+        const tierProgress = points - rank.minPoints;
+        const rankEl = document.getElementById('homeRankTier');
+        rankEl.textContent = rank.label + ' ' + tierProgress + '/100';
+        rankEl.style.background = rank.color;
+        rankEl.style.color = '#fff';
+        document.getElementById('seasonBar').style.display = 'flex';
+      }
+
+      loadSignature();
+
+      const achRes = await API.get('/api/achievement/list');
+      if (achRes.code === 0) {
+        const finished = achRes.data.list.filter(a => a.is_finish === 1).length;
+        document.getElementById('achieveProgress').textContent = finished + '/4 已完成';
+      }
+    }
+
+    const RANK_TIERS = [
+      { tier: 'iron',      label: '坚韧黑铁', color: '#7a7a7a', minPoints: 0 },
+      { tier: 'bronze',    label: '英勇黄铜', color: '#cd7f32', minPoints: 100 },
+      { tier: 'silver',    label: '不屈白银', color: '#c0c0c0', minPoints: 200 },
+      { tier: 'gold',      label: '荣耀黄金', color: '#ffd700', minPoints: 300 },
+      { tier: 'platinum',  label: '华贵铂金', color: '#00e5ff', minPoints: 400 },
+      { tier: 'emerald',   label: '流光翡翠', color: '#00c853', minPoints: 500 },
+      { tier: 'diamond',   label: '璀璨钻石', color: '#b388ff', minPoints: 600 },
+      { tier: 'master',    label: '超凡大师', color: '#ff6d00', minPoints: 700 }
+    ];
+
+    function getRankTier(points) {
+      let result = RANK_TIERS[0];
+      for (const tier of RANK_TIERS) {
+        if (points >= tier.minPoints) result = tier;
+      }
+      return result;
+    }
+
+    async function loadSignature() {
+      const res = await API.get('/api/player/signature');
+      if (res.code === 0) {
+        const sig = res.data.signature;
+        document.getElementById('signatureText').textContent = sig || '未设置';
+      }
+    }
+
+    function editSignature() {
+      const current = document.getElementById('signatureText').textContent;
+      document.getElementById('signatureInput').value = current === '未设置' ? '' : current;
+      document.getElementById('signatureEdit').style.display = 'block';
+      document.getElementById('signatureInput').focus();
+    }
+
+    function cancelSignature() {
+      document.getElementById('signatureEdit').style.display = 'none';
+    }
+
+    async function saveSignature() {
+      const signature = document.getElementById('signatureInput').value.trim();
+      if (signature.length > 20) {
+        showToast('签名不能超过20个字');
+        return;
+      }
+      const res = await API.post('/api/player/signature', { signature });
+      if (res.code === 0) {
+        document.getElementById('signatureText').textContent = res.data.signature || '未设置';
+        document.getElementById('signatureEdit').style.display = 'none';
+        showToast('签名已更新');
+      } else {
+        showToast(res.msg);
+      }
+    }
+
+    loadPlayerInfo();
+  </script>
+</body>
+</html>

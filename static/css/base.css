@@ -1,0 +1,42 @@
+/* 全局像素风基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Courier New', monospace;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  image-rendering: pixelated;
+}
+
+/* CSS变量 - 统一间距/色彩体系 */
+:root {
+  --color-bg: #1a1a2e;
+  --color-bg-dark: #0d0d1a;
+  --color-bg-card: #12122a;
+  --color-border: #4a4a8a;
+  --color-border-light: #2a2a4a;
+  --color-primary: #ff9800;
+  --color-primary-dark: #e68a00;
+  --color-accent: #6a9aff;
+  --color-gold: #ffd700;
+  --color-text: #e0e0e0;
+  --color-text-dim: #888;
+  --color-text-muted: #666;
+  --color-success: #4caf50;
+  --color-danger: #ff5252;
+  --color-win: #4caf50;
+  --color-lose: #ff5252;
+  --radius: 4px;
+  --radius-sm: 2px;
+  --border-w: 3px;
+  --font-mono: 'Courier New', monospace;
+}

@@ -104,23 +104,23 @@ router.post('/battle', authCheck, (req, res) => {
 
   // 校验阵容
   const deckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
   if (deckResult.length === 0 || deckResult[0].values.length === 0) {
     return res.json({ code: 1, msg: '未设置出战阵容' });
   }
   const deck = deckResult[0].values[0];
-  if (!deck[0] || !deck[1] || !deck[2]) {
+  if (!deck[0] || !deck[1] || !deck[2] || !deck[3] || !deck[4]) {
     return res.json({ code: 1, msg: '阵容未填满，无法对战' });
   }
 
-  const uids = [deck[0], deck[1], deck[2]];
+  const uids = [deck[0], deck[1], deck[2], deck[3], deck[4]];
   const cardResult = db.exec(
     `SELECT card_uid, pos, grade, role_name, star FROM player_cards WHERE player_id = ? AND card_uid IN (${uids.map(() => '?').join(',')})`,
     [req.playerId, ...uids]
   );
-  if (cardResult.length === 0 || cardResult[0].values.length !== 3) {
+  if (cardResult.length === 0 || cardResult[0].values.length !== 5) {
     return res.json({ code: 1, msg: '阵容卡牌数据异常' });
   }
   const myCards = cardResult[0].values.map(r => ({
@@ -153,7 +153,7 @@ router.post('/battle', authCheck, (req, res) => {
   const isWin = attScore >= defScore;
 
   const allPlayerStats = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     allPlayerStats.push({
       side: 'attacker',
       name: myCards[i].role_name,
@@ -163,7 +163,7 @@ router.post('/battle', authCheck, (req, res) => {
       ...attPlayers[i]
     });
   }
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     allPlayerStats.push({
       side: 'defender',
       name: aiRoster[i].role_name,

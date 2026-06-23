@@ -1,0 +1,142 @@
+/* 底部导航栏 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: #0d0d1a;
+  border-top: 3px solid #4a4a8a;
+  z-index: 100;
+}
+
+body {
+  padding-bottom: 4rem;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0;
+  color: #888;
+  font-size: 0.65rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-item.active {
+  color: #ff9800;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  margin-bottom: 0.15rem;
+}
+
+/* ========== 个人主页样式 ========== */
+
+/* 顶部标题栏 */
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: #0d0d1a;
+  border-bottom: 3px solid #4a4a8a;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.home-title {
+  font-size: 1rem;
+  color: #ff9800;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+}
+
+.home-nickname {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+/* 主内容区 */
+.home-content {
+  padding: 0.8rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+/* 响应式：小屏适配 */
+@media screen and (max-width: 20rem) {
+  html { font-size: 14px; }
+  .auth-container { padding: 1.5rem 1rem; }
+}
+
+@media screen and (min-width: 480px) {
+  html { font-size: 18px; }
+}
+
+@media screen and (min-width: 768px) {
+  html { font-size: 20px; }
+  .auth-container {
+    max-width: 24rem;
+    margin-top: 5vh;
+  }
+}
+
+/* 页面级容器统一 */
+.page-container {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0.8rem;
+}
+
+/* 底部导航安全间距 */
+.bottom-spacer {
+  height: 4.5rem;
+}
+
+/* 面板标题增强 */
+.panel-title {
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+/* 响应式增强 */
+@media screen and (max-width: 20rem) {
+  html { font-size: 14px; }
+  .pvp-mode-switch { flex-direction: column; gap: 0.3rem; }
+}
+
+@media screen and (min-width: 480px) {
+  html { font-size: 18px; }
+}
+
+@media screen and (min-width: 768px) {
+  html { font-size: 20px; }
+  .page-container { max-width: 30rem; }
+}
+
+/* 滚动条像素风 */
+::-webkit-scrollbar {
+  width: 0.4rem;
+  height: 0.4rem;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a9a;
+}

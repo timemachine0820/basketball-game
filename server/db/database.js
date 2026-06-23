@@ -206,6 +206,17 @@ function migrateTable() {
   if (!hasSignature) {
     db.run("ALTER TABLE players ADD COLUMN signature TEXT DEFAULT ''");
   }
+
+  // 5人阵容：补充slot4、slot5列
+  const deckCols = db.exec("PRAGMA table_info(team_deck)");
+  const hasSlot4 = deckCols.length > 0 && deckCols[0].values.some(r => r[1] === 'slot4_card');
+  if (!hasSlot4) {
+    db.run("ALTER TABLE team_deck ADD COLUMN slot4_card INTEGER DEFAULT NULL");
+  }
+  const hasSlot5 = deckCols.length > 0 && deckCols[0].values.some(r => r[1] === 'slot5_card');
+  if (!hasSlot5) {
+    db.run("ALTER TABLE team_deck ADD COLUMN slot5_card INTEGER DEFAULT NULL");
+  }
 }
 
 function saveDatabase() {

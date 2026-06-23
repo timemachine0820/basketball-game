@@ -55,6 +55,7 @@ async function start() {
 
   // 静态文件托管
   app.use(express.static(path.join(__dirname, '..', 'static')));
+  app.use(express.static(path.join(__dirname, '..', 'static', 'pages')));
   app.use('/config', express.static(path.join(__dirname, '..', 'config')));
 
   // API路由
@@ -69,7 +70,7 @@ async function start() {
 
   // 根路径重定向到登录页
   app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'static', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'static', 'pages', 'index.html'));
   });
 
   app.listen(PORT, () => {

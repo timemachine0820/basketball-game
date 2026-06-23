@@ -13,7 +13,7 @@ function calcCardFinalAttrs(cardInfo, roleData) {
     attrs[key] = (roleData.attrs[key] || 0) + growth;
   }
   // S角色天赋：主属性×1.2
-  if (cardInfo.grade === 'S' && S_ROLE_TALENT[cardInfo.role_name]) {
+  if ((cardInfo.grade === 'S' || cardInfo.grade === 'SS' || cardInfo.grade === 'SSS') && S_ROLE_TALENT[cardInfo.role_name]) {
     const mainAttr = S_ROLE_TALENT[cardInfo.role_name];
     attrs[mainAttr] = Math.round(attrs[mainAttr] * (1 + S_TALENT_MULTIPLIER));
   }
@@ -22,7 +22,7 @@ function calcCardFinalAttrs(cardInfo, roleData) {
 
 /**
  * 计算球队综合战力
- * 每张卡牌战力 = 全属性平均值 × 10，阵容战力 = 三张卡牌战力之和
+ * 每张卡牌战力 = 全属性平均值 × 10，阵容战力 = 五张卡牌战力之和
  */
 function calcTeamPower(cardsAttrs) {
   let total = 0;
@@ -137,7 +137,7 @@ function simulateBattle(myAttrs, aiAttrs) {
 
       // 55%概率计入助攻
       if (Math.random() < 0.55) {
-        const others = [0, 1, 2].filter(x => x !== handler);
+        const others = Array.from({ length: off.length }, (_, i) => i).filter(x => x !== handler);
         if (others.length > 0) {
           const aWeights = others.map(x => off[x].pass);
           const aTotal = aWeights.reduce((a, b) => a + b, 0);
@@ -175,7 +175,7 @@ function simulateBattle(myAttrs, aiAttrs) {
 function generateAITeam(myTeamPower) {
   const aiCards = [];
 
-  for (let slotIdx = 0; slotIdx < 3; slotIdx++) {
+  for (let slotIdx = 0; slotIdx < 5; slotIdx++) {
     const rule = SLOT_RULES[slotIdx];
     const allowedPos = rule.allowed;
 
@@ -220,6 +220,7 @@ function calcPlayerTeamAttrs(cards) {
 
 module.exports = {
   calcCardFinalAttrs,
+  calcPlayerAttrs: calcCardFinalAttrs,
   calcTeamPower,
   simulateBattle,
   generateAITeam,

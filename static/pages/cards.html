@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>巢湖篮球经理 - 卡牌仓库</title>
+  <link rel="stylesheet" href="../css/base.css">   <link rel="stylesheet" href="../css/components.css">   <link rel="stylesheet" href="../css/layout.css">   <link rel="stylesheet" href="../css/pages.css">   <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <div class="home-header">
+    <span class="home-title">卡牌仓库</span>
+    <span class="home-nickname" id="nicknameDisplay">加载中...</span>
+  </div>
+
+  <div class="home-content">
+
+    <!-- 持有卡牌统计 -->
+    <div class="cards-stat-bar pixel-border" id="cardsStatBar">
+      共 <b id="valTotalCards">0</b> 张卡牌
+    </div>
+
+    <!-- 球星碎片兑换 -->
+    <div class="panel-title">球星碎片兑换</div>
+    <div style="display:flex;align-items:center;gap:0.3rem;margin-bottom:0.4rem;padding:0 0.2rem;">
+      <div class="resource-icon shard-icon" style="width:0.8rem;height:0.8rem;"></div>
+      <span style="font-size:0.7rem;color:#ffd700;" id="exchangeShard">0</span>
+      <span style="font-size:0.6rem;color:#888;">碎片</span>
+    </div>
+    <div style="display:flex;gap:0.3rem;margin-bottom:0.6rem;padding:0 0.2rem;" id="exchangeRow">
+      <button class="pixel-btn primary" style="flex:1;font-size:0.65rem;" onclick="openExchangeModal('S')">S级兑换<br><span style="color:#ffd700;font-size:0.55rem;">1000碎片</span></button>
+    </div>
+
+    <!-- 位置筛选 -->
+    <div class="filter-row">
+      <div class="filter-tab active" data-filter="pos" data-value="ALL">全部</div>
+      <div class="filter-tab" data-filter="pos" data-value="PG">PG</div>
+      <div class="filter-tab" data-filter="pos" data-value="SG">SG</div>
+      <div class="filter-tab" data-filter="pos" data-value="SF">SF</div>
+      <div class="filter-tab" data-filter="pos" data-value="PF">PF</div>
+      <div class="filter-tab" data-filter="pos" data-value="C">C</div>
+    </div>
+
+    <!-- 品级筛选 -->
+    <div class="filter-row">
+      <div class="filter-tab active" data-filter="grade" data-value="ALL">全部</div>
+      <div class="filter-tab grade-filter-B" data-filter="grade" data-value="B">B</div>
+      <div class="filter-tab grade-filter-A" data-filter="grade" data-value="A">A</div>
+      <div class="filter-tab grade-filter-S" data-filter="grade" data-value="S">S</div>
+    </div>
+
+    <!-- 持有卡牌统计由顶部statBar展示 -->
+
+    <!-- 卡牌列表 -->
+    <div class="cards-grid" id="cardsGrid">
+      <div class="cards-empty">暂无卡牌</div>
+    </div>
+
+    <!-- 分页控制 -->
+    <div class="pagination" id="pagination" style="display:none;">
+      <button class="pixel-btn page-btn" id="btnPrev">上一页</button>
+      <span class="page-info" id="pageInfo">1 / 1</span>
+      <button class="pixel-btn page-btn" id="btnNext">下一页</button>
+    </div>
+
+  </div>
+
+  <div id="navContainer"></div>
+  <script>renderBottomNav('cards');</script>
+
+  <!-- 页面底部留白，避免被导航栏遮挡 -->
+  <div style="height: 4.5rem;"></div>
+
+  <!-- 卡牌详情弹窗 -->
+  <div class="card-detail-mask" id="cardDetailMask" style="display:none;">
+    <div class="card-detail-panel pixel-border" id="cardDetailPanel">
+      <div class="card-detail-header">
+        <span class="grade-tag" id="detailGrade"></span>
+        <span class="card-detail-name" id="detailName"></span>
+        <span class="card-detail-close" id="detailClose">&times;</span>
+      </div>
+      <div id="detailImage"></div>
+      <div class="card-detail-pos" id="detailPos"></div>
+      <div class="card-detail-stars" id="detailStars"></div>
+      <div class="card-detail-section-title">当前属性</div>
+      <div class="card-detail-attrs" id="detailAttrs"></div>
+      <div id="detailTalent"></div>
+      <div id="detailGrowth"></div>
+    </div>
+  </div>
+
+  <!-- 碎片兑换球员选择弹窗 -->
+  <div class="card-detail-mask" id="exchangeMask" style="display:none;">
+    <div class="card-detail-panel pixel-border" id="exchangePanel" style="max-height:80vh;overflow-y:auto;">
+      <div class="card-detail-header">
+        <span class="card-detail-name" id="exchangeTitle">选择兑换球员</span>
+        <span class="card-detail-close" id="exchangeClose">&times;</span>
+      </div>
+      <div id="exchangePlayerList" style="padding:0.3rem;"></div>
+    </div>
+  </div>
+
+  <script src="../js/core/router.js"></script>
+  <script src="../js/core/store.js"></script>
+  <script src="../js/components/nav.js"></script>
+  <script src="../js/components/modal.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="/config/game-config.js"></script>
+  <script>
+    if (!localStorage.getItem('player_id')) {
+      window.location.href = 'index.html';
+    }
+
+    const PAGE_SIZE = 10;
+    let allCards = [];
+    let filteredCards = [];
+    let currentPage = 1;
+    let filterPos = 'ALL';
+    let filterGrade = 'ALL';
+    let isSubmitting = false;
+
+    // 导航
+    
+    
+    
+    
+
+    // 角色基础属性查找
+    function getRoleBase(roleName) {
+      return ALL_ROLES.find(r => r.name === roleName);
+    }
+
+    // 计算最终属性
+    function calcFinalAttrs(baseAttrs, grade, star) {
+      const growth = GROWTH_PER_STAR[grade] * (star - 1);
+      const result = {};
+      for (const key of ATTR_NAMES) {
+        result[key] = (baseAttrs[key] || 0) + growth;
+      }
+      return result;
+    }
+
+    // 属性中文名
+    const ATTR_LABELS = {
+      threept: '三分', midshot: '中投', dunk: '扣篮',
+      rebound: '篮板', block: '盖帽', speed: '速度',
+      pass: '传球', steal: '抢断'
+    };
+
+    // 位置筛选
+    document.querySelectorAll('[data-filter="pos"]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterPos = tab.dataset.value;
+        document.querySelectorAll('[data-filter="pos"]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        applyFilter();
+      });
+    });
+
+    // 品级筛选
+    document.querySelectorAll('[data-filter="grade"]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterGrade = tab.dataset.value;
+        document.querySelectorAll('[data-filter="grade"]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        applyFilter();
+      });
+    });
+
+    // 应用筛选并渲染
+    function applyFilter() {
+      filteredCards = allCards.filter(c => {
+        if (filterPos !== 'ALL' && c.pos !== filterPos) return false;
+        if (filterGrade !== 'ALL' && c.grade !== filterGrade) return false;
+        return true;
+      });
+      currentPage = 1;
+      renderCards();
+    }
+
+    // 渲染卡牌列表
+    function renderCards() {
+      const grid = document.getElementById('cardsGrid');
+      const total = filteredCards.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pageCards = filteredCards.slice(start, start + PAGE_SIZE);
+
+      if (total === 0) {
+        grid.innerHTML = '<div class="cards-empty">暂无符合条件的卡牌</div>';
+        document.getElementById('pagination').style.display = 'none';
+        return;
+      }
+
+      grid.innerHTML = pageCards.map(c => {
+        const color = gradeColor(c.grade);
+        const roleBase = getRoleBase(c.role_name);
+        const starText = '★'.repeat(c.star) + '☆'.repeat((STAR_LIMIT[c.grade] || 5) - c.star);
+        return `<div class="card-pixel pixel-border" style="border-color:${color};" data-uid="${c.card_uid}">
+          <div class="card-pixel-top">
+            <span class="grade-tag grade-${c.grade}">${c.grade}</span>
+            <span class="card-pixel-pos">${c.pos}</span>
+            ${c.owned ? '<span class="card-pixel-owned" style="font-size:0.5rem;color:#4caf50;">持有</span>' : ''}
+          </div>
+          <div class="card-pixel-name" style="color:${color};">${c.role_name}</div>
+          <div class="card-pixel-stars">${starText}</div>
+        </div>`;
+      }).join('');
+
+      // 绑定卡牌点击事件
+      grid.querySelectorAll('.card-pixel').forEach(el => {
+        el.addEventListener('click', () => {
+          showCardDetail(parseInt(el.dataset.uid));
+        });
+      });
+
+      // 更新统计
+      document.getElementById('valTotalCards').textContent = total;
+
+      // 渲染分页
+      renderPagination(totalPages);
+    }
+
+    // 渲染分页
+    function renderPagination(totalPages) {
+      const pag = document.getElementById('pagination');
+      if (totalPages <= 1) {
+        pag.style.display = 'none';
+        return;
+      }
+      pag.style.display = 'flex';
+      document.getElementById('pageInfo').textContent = currentPage + ' / ' + totalPages;
+      document.getElementById('btnPrev').disabled = currentPage <= 1;
+      document.getElementById('btnNext').disabled = currentPage >= totalPages;
+    }
+
+    // 上下页
+    document.getElementById('btnPrev').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderCards();
+      }
+    });
+    document.getElementById('btnNext').addEventListener('click', () => {
+      const totalPages = Math.ceil(filteredCards.length / PAGE_SIZE);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderCards();
+      }
+    });
+
+    // 卡牌详情弹窗
+    function showCardDetail(cardUid) {
+      const card = allCards.find(c => c.card_uid === cardUid);
+      if (!card) return;
+
+      const roleBase = getRoleBase(card.role_name);
+      const color = gradeColor(card.grade);
+      const maxStar = STAR_LIMIT[card.grade] || 5;
+      const growth = GROWTH_PER_STAR[card.grade] || 2;
+
+      document.getElementById('detailGrade').className = 'grade-tag grade-' + card.grade;
+      document.getElementById('detailGrade').textContent = card.grade;
+      document.getElementById('detailName').textContent = card.role_name;
+      document.getElementById('detailName').style.color = color;
+      const star = card.star || 1;
+      const starText = card.owned ? (' | 星级: ' + star + '/' + maxStar) : ' | 未拥有';
+      document.getElementById('detailPos').textContent = '位置: ' + card.pos + starText;
+      document.getElementById('detailStars').innerHTML = card.owned ? renderStars(star) : '<span style="color:#666;">未拥有此卡牌</span>';
+
+      // S级球员图片
+      const imgEl = document.getElementById('detailImage');
+      if (card.grade === 'S' && S_ROLE_IMAGE[card.role_name]) {
+        imgEl.innerHTML = `<img class="s-card-image" src="assets/${S_ROLE_IMAGE[card.role_name]}" alt="${card.role_name}">`;
+      } else {
+        imgEl.innerHTML = '';
+      }
+
+      if (!roleBase) {
+        document.getElementById('detailAttrs').innerHTML = '';
+        document.getElementById('detailTalent').innerHTML = '';
+        document.getElementById('detailGrowth').innerHTML = '';
+        document.getElementById('cardDetailMask').style.display = 'flex';
+        return;
+      }
+
+      const finalAttrs = calcFinalAttrs(roleBase.attrs, card.grade, card.star || 1);
+
+      // 当前属性列表
+      document.getElementById('detailAttrs').innerHTML = ATTR_NAMES.map(key => {
+        const val = finalAttrs[key];
+        return `<div class="detail-attr-row">
+          <span class="detail-attr-name">${ATTR_LABELS[key]}</span>
+          <div class="detail-attr-bar-bg">
+            <div class="detail-attr-bar" style="width:${Math.min(val, 100)}%;background:${color};"></div>
+          </div>
+          <span class="detail-attr-val">${val}</span>
+        </div>`;
+      }).join('');
+
+      // S角色天赋说明
+      const talentEl = document.getElementById('detailTalent');
+      if (card.grade === 'S' && S_ROLE_TALENT[card.role_name]) {
+        const talentAttr = S_ROLE_TALENT[card.role_name];
+        const talentVal = Math.round(finalAttrs[talentAttr] * S_TALENT_MULTIPLIER);
+        const nickname = S_ROLE_NICKNAME[card.role_name] || '';
+        talentEl.innerHTML = `<div class="detail-talent">
+          <div class="detail-talent-title">${nickname ? '「' + nickname + '」' : ''}</div>
+          <div class="detail-talent-desc">S天赋: ${ATTR_LABELS[talentAttr]}+20%，结算时额外+${talentVal}（${finalAttrs[talentAttr]} × 20%）</div>
+        </div>`;
+      } else {
+        talentEl.innerHTML = '';
+      }
+
+      // 星级成长预览
+      const growthEl = document.getElementById('detailGrowth');
+      if (maxStar > 1) {
+        let growthHtml = '<div class="detail-growth-title">星级成长预览</div><div class="detail-growth-table">';
+        // 表头
+        growthHtml += '<div class="detail-growth-header"><span class="growth-col-attr">属性</span>';
+        for (let s = 1; s <= maxStar; s++) {
+          growthHtml += `<span class="growth-col-star${s === card.star ? ' growth-col-current' : ''}">${'★'.repeat(s)}</span>`;
+        }
+        growthHtml += '</div>';
+        // 每行属性
+        ATTR_NAMES.forEach(key => {
+          growthHtml += `<div class="detail-growth-row"><span class="growth-col-attr">${ATTR_LABELS[key]}</span>`;
+          for (let s = 1; s <= maxStar; s++) {
+            const val = (roleBase.attrs[key] || 0) + growth * (s - 1);
+            const isCur = s === card.star;
+            growthHtml += `<span class="growth-col-star${isCur ? ' growth-col-current' : ''}">${val}</span>`;
+          }
+          growthHtml += '</div>';
+        });
+        growthHtml += '</div>';
+        growthEl.innerHTML = growthHtml;
+      } else {
+        growthEl.innerHTML = '';
+      }
+
+      document.getElementById('cardDetailMask').style.display = 'flex';
+    }
+
+    // 关闭详情弹窗
+    document.getElementById('detailClose').addEventListener('click', () => {
+      document.getElementById('cardDetailMask').style.display = 'none';
+    });
+    document.getElementById('cardDetailMask').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('cardDetailMask')) {
+        document.getElementById('cardDetailMask').style.display = 'none';
+      }
+    });
+
+    // ===== 加载数据 =====
+    let ownedCardNames = new Set();
+    let currentShard = 0;
+
+    async function loadData() {
+      const infoRes = await API.get('/api/player/info');
+      if (infoRes.code === 0) {
+        document.getElementById('nicknameDisplay').textContent = infoRes.data.nickname;
+        currentShard = infoRes.data.upgrade_shard || 0;
+        document.getElementById('exchangeShard').textContent = currentShard;
+      }
+      // 加载玩家拥有的卡牌名称集合
+      const cardsRes = await API.get('/api/player/cards');
+      if (cardsRes.code === 0) {
+        ownedCardNames = new Set((cardsRes.data || []).map(c => c.role_name));
+      }
+      // 使用卡库全部角色
+      allCards = ALL_ROLES.map((role, idx) => ({
+        card_uid: idx + 1,
+        pos: role.pos,
+        grade: role.grade,
+        role_name: role.name,
+        owned: ownedCardNames.has(role.name)
+      }));
+      // 默认排序：S > A > B，同品级按位置，再按名称
+      const gradeOrder = { SSS: 0, SS: 1, S: 2, A: 3, B: 4 };
+      const posOrder = { PG: 0, SG: 1, SF: 2, PF: 3, C: 4 };
+      allCards.sort((a, b) => {
+        if (gradeOrder[a.grade] !== gradeOrder[b.grade]) return gradeOrder[a.grade] - gradeOrder[b.grade];
+        if (posOrder[a.pos] !== posOrder[b.pos]) return posOrder[a.pos] - posOrder[b.pos];
+        return a.role_name.localeCompare(b.role_name);
+      });
+      document.getElementById('valTotalCards').textContent = allCards.length;
+      filteredCards = [...allCards];
+      renderCards();
+    }
+
+    loadData();
+
+    // ===== 球星碎片兑换 =====
+    const EXCHANGE_COST = { S: 1000 };
+
+    // 打开兑换球员选择弹窗
+    function openExchangeModal(grade) {
+      const cost = EXCHANGE_COST[grade];
+      if (currentShard < cost) {
+        showToast(`球星碎片不足，兑换${grade}级需${cost}碎片`);
+        return;
+      }
+      const candidates = ALL_ROLES.filter(r => r.grade === grade);
+      const titleEl = document.getElementById('exchangeTitle');
+      titleEl.textContent = `选择${grade}级球员 (${cost}碎片)`;
+      titleEl.style.color = gradeColor(grade);
+
+      const listEl = document.getElementById('exchangePlayerList');
+      listEl.innerHTML = candidates.map(r => {
+        const color = gradeColor(r.grade);
+        const posColor = gradeColor(r.grade);
+        return `<div class="battle-player-item" style="border-color:${color};cursor:pointer;margin-bottom:0.2rem;" onclick="doExchange('${grade}','${r.name}')">
+          <span class="grade-tag grade-${r.grade}">${r.grade}</span>
+          <span class="battle-player-name" style="color:${color};">${r.name}</span>
+          <span class="battle-player-pos">${r.pos}</span>
+        </div>`;
+      }).join('');
+
+      document.getElementById('exchangeMask').style.display = 'flex';
+    }
+
+    // 执行兑换
+    async function doExchange(grade, roleName) {
+      const cost = EXCHANGE_COST[grade];
+      if (currentShard < cost) {
+        showToast('球星碎片不足');
+        return;
+      }
+      const res = await API.post('/api/player/exchange-shard', { grade, role_name: roleName });
+      if (res.code !== 0) {
+        showToast(res.msg || '兑换失败');
+        return;
+      }
+      currentShard = res.data.updatedShard;
+      document.getElementById('exchangeShard').textContent = currentShard;
+      document.getElementById('exchangeMask').style.display = 'none';
+      const card = res.data.card;
+      showToast(`获得${grade}级卡牌: ${card.role_name}`);
+      // 刷新卡牌列表
+      const cardsRes = await API.get('/api/player/cards');
+      if (cardsRes.code === 0) {
+        ownedCardNames = new Set((cardsRes.data || []).map(c => c.role_name));
+        allCards = ALL_ROLES.map((role, idx) => ({
+          card_uid: idx + 1, pos: role.pos, grade: role.grade,
+          role_name: role.name, owned: ownedCardNames.has(role.name)
+        }));
+        const gradeOrder = { S: 0, A: 1, B: 2 };
+        const posOrder = { PG: 0, SG: 1, SF: 2, PF: 3, C: 4 };
+        allCards.sort((a, b) => {
+          if (gradeOrder[a.grade] !== gradeOrder[b.grade]) return gradeOrder[a.grade] - gradeOrder[b.grade];
+          if (posOrder[a.pos] !== posOrder[b.pos]) return posOrder[a.pos] - posOrder[b.pos];
+          return a.role_name.localeCompare(b.role_name);
+        });
+        filteredCards = [...allCards];
+        applyFilter();
+      }
+    }
+
+    // 关闭兑换弹窗
+    document.getElementById('exchangeClose').addEventListener('click', () => {
+      document.getElementById('exchangeMask').style.display = 'none';
+    });
+    document.getElementById('exchangeMask').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('exchangeMask')) {
+        document.getElementById('exchangeMask').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

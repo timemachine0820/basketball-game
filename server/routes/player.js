@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getDb, saveDatabase } = require('../db/database');
-const { ALL_ROLES, POOL_CONFIG, PITY_STEPS, DRAW_COST, STAR_LIMIT, SHARD_EXCHANGE, DECOMPOSE_REWARD } = require('../../config/game-config');
+const { ALL_ROLES, POOL_CONFIG, PITY_STEPS, DRAW_COST, STAR_LIMIT, SHARD_EXCHANGE, DECOMPOSE_REWARD, SWING_POSITIONS, SLOT_RULES } = require('../../config/game-config');
 const { finishAchievement } = require('./achievement');
+const { calcPlayerAttrs } = require('../battle-engine');
 
 // 身份校验中间件
 function authCheck(req, res, next) {
@@ -32,6 +33,21 @@ router.get('/info', authCheck, (req, res) => {
   }
 
   const row = result[0].values[0];
+
+  const deckResult = db.exec(
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
+    [req.playerId]
+  );
+  const deck = (deckResult.length > 0 && deckResult[0].values.length > 0)
+    ? {
+        slot1_card: deckResult[0].values[0][0],
+        slot2_card: deckResult[0].values[0][1],
+        slot3_card: deckResult[0].values[0][2],
+        slot4_card: deckResult[0].values[0][3],
+        slot5_card: deckResult[0].values[0][4]
+      }
+    : { slot1_card: null, slot2_card: null, slot3_card: null, slot4_card: null, slot5_card: null };
+
   res.json({
     code: 0,
     data: {
@@ -44,7 +60,8 @@ router.get('/info', authCheck, (req, res) => {
       free_draws: row[5],
       total_draw: row[6],
       total_s: row[7],
-      current_season: row[8]
+      current_season: row[8],
+      deck
     }
   });
 });
@@ -74,71 +91,90 @@ router.get('/cards', authCheck, (req, res) => {
 router.get('/deck', authCheck, (req, res) => {
   const db = getDb();
   const result = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
 
   if (result.length === 0 || result[0].values.length === 0) {
-    return res.json({ code: 0, data: { slot1_card: null, slot2_card: null, slot3_card: null } });
+    return res.json({ code: 0, data: { slot1_card: null, slot2_card: null, slot3_card: null, slot4_card: null, slot5_card: null, power: 0 } });
   }
 
   const row = result[0].values[0];
+  const slotUids = [row[0], row[1], row[2], row[3], row[4]].filter(Boolean);
+
+  let power = 0;
+  if (slotUids.length > 0) {
+    const placeholders = slotUids.map(() => '?').join(',');
+    const cardResult = db.exec(
+      `SELECT card_uid, pos, grade, role_name, star FROM player_cards WHERE player_id = ? AND card_uid IN (${placeholders})`,
+      [req.playerId, ...slotUids]
+    );
+    if (cardResult.length > 0) {
+      const cardsAttrs = cardResult[0].values.map(r => {
+        const cardInfo = { pos: r[1], grade: r[2], role_name: r[3], star: r[4] };
+        const roleData = ALL_ROLES.find(rd => rd.name === r[3] && rd.grade === r[2]);
+        return calcPlayerAttrs(cardInfo, roleData);
+      });
+      const { calcTeamPower } = require('../battle-engine');
+      power = calcTeamPower(cardsAttrs);
+    }
+  }
+
   res.json({
     code: 0,
     data: {
       slot1_card: row[0],
       slot2_card: row[1],
-      slot3_card: row[2]
+      slot3_card: row[2],
+      slot4_card: row[3],
+      slot5_card: row[4],
+      power
     }
   });
 });
 
 // 保存出战阵容
 router.post('/deck', authCheck, (req, res) => {
-  const { slot1_card, slot2_card, slot3_card } = req.body;
+  const { slot1_card, slot2_card, slot3_card, slot4_card, slot5_card } = req.body;
   const db = getDb();
 
-  // 三个槽位必填
-  if (!slot1_card || !slot2_card || !slot3_card) {
-    return res.json({ code: 1, msg: '三个槽位必须全部填满' });
+  const slots = [slot1_card, slot2_card, slot3_card, slot4_card, slot5_card];
+  if (slots.some(s => !s)) {
+    return res.json({ code: 1, msg: '五个槽位必须全部填满' });
   }
 
-  // 不能重复使用同一张卡牌
-  const uids = [slot1_card, slot2_card, slot3_card];
-  if (new Set(uids).size !== 3) {
+  if (new Set(slots).size !== 5) {
     return res.json({ code: 1, msg: '不能重复使用同一张卡牌' });
   }
 
-  // 查询卡牌信息并校验位置合法性
-  const placeholders = uids.map(() => '?').join(',');
+  const placeholders = slots.map(() => '?').join(',');
   const cardResult = db.exec(
-    `SELECT card_uid, pos FROM player_cards WHERE player_id = ? AND card_uid IN (${placeholders})`,
-    [req.playerId, ...uids]
+    `SELECT card_uid, pos, role_name FROM player_cards WHERE player_id = ? AND card_uid IN (${placeholders})`,
+    [req.playerId, ...slots]
   );
 
-  if (cardResult.length === 0 || cardResult[0].values.length !== 3) {
+  if (cardResult.length === 0 || cardResult[0].values.length !== 5) {
     return res.json({ code: 1, msg: '所选卡牌不存在或不属于当前玩家' });
   }
 
   const cardMap = {};
-  cardResult[0].values.forEach(r => { cardMap[r[0]] = r[1]; });
+  cardResult[0].values.forEach(r => { cardMap[r[0]] = { pos: r[1], role_name: r[2] }; });
 
-  // 槽1仅PG/SG，槽2仅SF/PF，槽3仅C
-  const slotRules = [
-    { slot: 1, allowed: ['PG', 'SG'] },
-    { slot: 2, allowed: ['SF', 'PF'] },
-    { slot: 3, allowed: ['C'] }
-  ];
+  function canCardFitSlot(cardRoleName, cardPos, slotIndex) {
+    const rule = SLOT_RULES[slotIndex];
+    if (rule.allowed.includes(cardPos)) return true;
+    const swing = SWING_POSITIONS[cardRoleName];
+    if (swing && swing.some(p => rule.allowed.includes(p))) return true;
+    return false;
+  }
 
-  for (const rule of slotRules) {
-    const cardUid = uids[rule.slot - 1];
-    const pos = cardMap[cardUid];
-    if (!rule.allowed.includes(pos)) {
-      return res.json({ code: 1, msg: `槽${rule.slot}仅允许 ${rule.allowed.join('/')} 位置` });
+  for (let i = 0; i < 5; i++) {
+    const card = cardMap[slots[i]];
+    if (!canCardFitSlot(card.role_name, card.pos, i)) {
+      return res.json({ code: 1, msg: `槽${i + 1}仅允许 ${SLOT_RULES[i].allowed.join('/')} 位置` });
     }
   }
 
-  // 写入或更新阵容
   const existResult = db.exec(
     "SELECT deck_id FROM team_deck WHERE player_id = ?",
     [req.playerId]
@@ -146,13 +182,13 @@ router.post('/deck', authCheck, (req, res) => {
 
   if (existResult.length > 0 && existResult[0].values.length > 0) {
     db.run(
-      "UPDATE team_deck SET slot1_card = ?, slot2_card = ?, slot3_card = ? WHERE player_id = ?",
-      [slot1_card, slot2_card, slot3_card, req.playerId]
+      "UPDATE team_deck SET slot1_card = ?, slot2_card = ?, slot3_card = ?, slot4_card = ?, slot5_card = ? WHERE player_id = ?",
+      [slot1_card, slot2_card, slot3_card, slot4_card, slot5_card, req.playerId]
     );
   } else {
     db.run(
-      "INSERT INTO team_deck (player_id, slot1_card, slot2_card, slot3_card) VALUES (?, ?, ?, ?)",
-      [req.playerId, slot1_card, slot2_card, slot3_card]
+      "INSERT INTO team_deck (player_id, slot1_card, slot2_card, slot3_card, slot4_card, slot5_card) VALUES (?, ?, ?, ?, ?, ?)",
+      [req.playerId, slot1_card, slot2_card, slot3_card, slot4_card, slot5_card]
     );
   }
 
@@ -377,7 +413,7 @@ router.post('/upgrade', authCheck, (req, res) => {
   try {
     // 检查是否在出战阵容中，若在则先清空对应槽位
     const deckResult = db.exec(
-      "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+      "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
       [req.playerId]
     );
     if (deckResult.length > 0 && deckResult[0].values.length > 0) {
@@ -386,6 +422,8 @@ router.post('/upgrade', authCheck, (req, res) => {
       if (deck[0] === card_uid_1 || deck[0] === card_uid_2) deckUpdates.push('slot1_card = NULL');
       if (deck[1] === card_uid_1 || deck[1] === card_uid_2) deckUpdates.push('slot2_card = NULL');
       if (deck[2] === card_uid_1 || deck[2] === card_uid_2) deckUpdates.push('slot3_card = NULL');
+      if (deck[3] === card_uid_1 || deck[3] === card_uid_2) deckUpdates.push('slot4_card = NULL');
+      if (deck[4] === card_uid_1 || deck[4] === card_uid_2) deckUpdates.push('slot5_card = NULL');
       if (deckUpdates.length > 0) {
         db.run(`UPDATE team_deck SET ${deckUpdates.join(', ')} WHERE player_id = ?`, [req.playerId]);
       }
@@ -432,13 +470,16 @@ router.post('/upgrade', authCheck, (req, res) => {
 // POST /api/player/exchange-shard - 球星碎片兑换指定卡牌
 router.post('/exchange-shard', authCheck, (req, res) => {
   const { grade, role_name } = req.body;
-  if (grade !== 'S') {
-    return res.json({ code: 1, msg: '仅支持兑换S级球员' });
+  if (!['S', 'SS', 'SSS'].includes(grade)) {
+    return res.json({ code: 1, msg: '仅支持兑换S/SS/SSS级球员' });
   }
   if (!role_name) {
     return res.json({ code: 1, msg: '请选择兑换球员' });
   }
 
+  if (!SHARD_EXCHANGE[grade]) {
+    return res.json({ code: 1, msg: '无效的品级配置' });
+  }
   const cost = SHARD_EXCHANGE[grade].cost;
   const db = getDb();
 
@@ -510,7 +551,7 @@ router.post('/upgrade-all', authCheck, (req, res) => {
 
   // 读取出战阵容
   const deckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
   const deckUids = new Set();
@@ -519,6 +560,8 @@ router.post('/upgrade-all', authCheck, (req, res) => {
     if (d[0]) deckUids.add(d[0]);
     if (d[1]) deckUids.add(d[1]);
     if (d[2]) deckUids.add(d[2]);
+    if (d[3]) deckUids.add(d[3]);
+    if (d[4]) deckUids.add(d[4]);
   }
 
   // 按 品级+角色名 分组
@@ -569,6 +612,8 @@ router.post('/upgrade-all', authCheck, (req, res) => {
             if (d[0] === c1.uid || d[0] === c2.uid) deckUpdates.push('slot1_card = NULL');
             if (d[1] === c1.uid || d[1] === c2.uid) deckUpdates.push('slot2_card = NULL');
             if (d[2] === c1.uid || d[2] === c2.uid) deckUpdates.push('slot3_card = NULL');
+            if (d[3] === c1.uid || d[3] === c2.uid) deckUpdates.push('slot4_card = NULL');
+            if (d[4] === c1.uid || d[4] === c2.uid) deckUpdates.push('slot5_card = NULL');
           }
           if (deckUpdates.length > 0) {
             db.run(`UPDATE team_deck SET ${deckUpdates.join(', ')} WHERE player_id = ?`, [req.playerId]);
@@ -590,7 +635,7 @@ router.post('/upgrade-all', authCheck, (req, res) => {
         upgradeResults.push({ role_name: roleName, grade, from: s, to: s + 1 });
 
         // S三星成就检测
-        if (grade === 'S' && (s + 1) >= 3) {
+        if ((grade === 'S' || grade === 'SS' || grade === 'SSS') && (s + 1) >= 3) {
           finishAchievement(req.playerId, 's_three_star');
         }
 
@@ -626,7 +671,7 @@ router.post('/decompose', authCheck, (req, res) => {
 
   // 读取出战阵容
   const deckResult = db.exec(
-    "SELECT slot1_card, slot2_card, slot3_card FROM team_deck WHERE player_id = ?",
+    "SELECT slot1_card, slot2_card, slot3_card, slot4_card, slot5_card FROM team_deck WHERE player_id = ?",
     [req.playerId]
   );
   const deckUids = new Set();
@@ -635,6 +680,8 @@ router.post('/decompose', authCheck, (req, res) => {
     if (d[0]) deckUids.add(d[0]);
     if (d[1]) deckUids.add(d[1]);
     if (d[2]) deckUids.add(d[2]);
+    if (d[3]) deckUids.add(d[3]);
+    if (d[4]) deckUids.add(d[4]);
   }
 
   // 校验出战阵容中的卡牌

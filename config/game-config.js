@@ -2,18 +2,18 @@
 const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
 
 // 品级
-const GRADES = { B: 'B', A: 'A', S: 'S' };
+const GRADES = { B: 'B', A: 'A', S: 'S', SS: 'SS', SSS: 'SSS' };
 
-// 品级星级上限
-const STAR_LIMIT = { B: 5, A: 4, S: 3 };
+// 品级星级上限（统一5星）
+const STAR_LIMIT = { B: 5, A: 5, S: 5, SS: 5, SSS: 5 };
 
-// 品级每星全属性成长增量（翻倍加强）
-const GROWTH_PER_STAR = { B: 4, A: 6, S: 8 };
+// 品级每星全属性成长增量
+const GROWTH_PER_STAR = { B: 4, A: 6, S: 8, SS: 10, SSS: 12 };
 
-// S角色天赋：主属性结算+20%倍率
+// S/SS/SSS角色天赋：主属性结算+20%倍率
 const S_TALENT_MULTIPLIER = 0.2;
 
-// S角色天赋映射：role_name → 主属性
+// 角色天赋映射：role_name → 主属性
 const S_ROLE_TALENT = {
   '华仔': 'rebound',
   '阿晟': 'steal',
@@ -22,10 +22,14 @@ const S_ROLE_TALENT = {
   '陶二': 'threept',
   '奶成哥': 'threept',
   '阿真': 'pass',
-  '勇子': 'steal'
+  '勇子': 'steal',
+  '极致·华仔': 'rebound',
+  '大学时期·陶二': 'threept',
+  '单身·小亮': 'midshot',
+  '黄毛·阿晟': 'steal'
 };
 
-// S角色外号描述：偏好风格
+// 角色外号描述
 const S_ROLE_NICKNAME = {
   '华仔': '篮下守护者',
   '阿晟': '偷球达人',
@@ -34,10 +38,14 @@ const S_ROLE_NICKNAME = {
   '陶二': '远程炮台',
   '奶成哥': '神射奶',
   '阿真': '控场大师',
-  '勇子': '铁壁防线'
+  '勇子': '铁壁防线',
+  '极致·华仔': '篮板之神',
+  '大学时期·陶二': '三分暴雨',
+  '单身·小亮': '中投无解',
+  '黄毛·阿晟': '全能战士'
 };
 
-// S角色图片映射：role_name → 图片文件名
+// 角色图片映射
 const S_ROLE_IMAGE = {
   '华仔': 'huazai.png',
   '阿晟': 'asheng.png',
@@ -46,20 +54,34 @@ const S_ROLE_IMAGE = {
   '陶二': 'taoer.png',
   '奶成哥': 'naicheng.png',
   '阿真': 'azhen.png',
-  '勇子': 'yongzi.png'
+  '勇子': 'yongzi.png',
+  '极致·华仔': 'huazai.png',
+  '大学时期·陶二': 'taoer.png',
+  '单身·小亮': 'xiaoliang.png',
+  '黄毛·阿晟': 'asheng.png'
 };
 
-// 属性列表：三分、中投、扣篮、篮板、盖帽、速度、传球、抢断
+// 摇摆双位置球员配置
+const SWING_POSITIONS = {
+  '陶二': ['SG', 'SF'],
+  '阿晟': ['PF', 'C'],
+  '大学时期·陶二': ['SG', 'SF'],
+  '黄毛·阿晟': ['PF', 'C']
+};
+
+// 属性列表
 const ATTR_NAMES = ['threept', 'midshot', 'dunk', 'rebound', 'block', 'speed', 'pass', 'steal'];
 
-// 阵容槽位规则：槽1=PG/SG，槽2=SF/PF，槽3=C
+// 阵容槽位规则：5个标准位置
 const SLOT_RULES = [
-  { slot: 1, allowed: ['PG', 'SG'] },
-  { slot: 2, allowed: ['SF', 'PF'] },
-  { slot: 3, allowed: ['C'] }
+  { slot: 1, allowed: ['PG'] },
+  { slot: 2, allowed: ['SG'] },
+  { slot: 3, allowed: ['SF'] },
+  { slot: 4, allowed: ['PF'] },
+  { slot: 5, allowed: ['C'] }
 ];
 
-// S级角色配置（8名）：三分、中投、扣篮、篮板、盖帽、速度、传球、抢断
+// S级角色配置（8名）
 const S_ROLES = [
   { name: '华仔', pos: 'C', grade: 'S', attrs: { threept: 40, midshot: 50, dunk: 60, rebound: 88, block: 70, speed: 40, pass: 44, steal: 36 } },
   { name: '阿晟', pos: 'PF', grade: 'S', attrs: { threept: 36, midshot: 56, dunk: 70, rebound: 60, block: 50, speed: 60, pass: 44, steal: 68 } },
@@ -69,6 +91,18 @@ const S_ROLES = [
   { name: '奶成哥', pos: 'SG', grade: 'S', attrs: { threept: 96, midshot: 56, dunk: 30, rebound: 24, block: 20, speed: 60, pass: 44, steal: 40 } },
   { name: '阿真', pos: 'PG', grade: 'S', attrs: { threept: 44, midshot: 50, dunk: 24, rebound: 30, block: 20, speed: 70, pass: 96, steal: 56 } },
   { name: '勇子', pos: 'SF', grade: 'S', attrs: { threept: 44, midshot: 48, dunk: 52, rebound: 56, block: 78, speed: 56, pass: 40, steal: 82 } }
+];
+
+// SS级角色配置（橙色）：S基础×1.1
+const SS_ROLES = [
+  { name: '大学时期·陶二', pos: 'SF', grade: 'SS', attrs: { threept: 97, midshot: 66, dunk: 40, rebound: 40, block: 26, speed: 62, pass: 44, steal: 40 } },
+  { name: '单身·小亮', pos: 'SF', grade: 'SS', attrs: { threept: 62, midshot: 90, dunk: 48, rebound: 44, block: 33, speed: 70, pass: 55, steal: 48 } },
+  { name: '黄毛·阿晟', pos: 'PF', grade: 'SS', attrs: { threept: 40, midshot: 62, dunk: 77, rebound: 66, block: 55, speed: 66, pass: 48, steal: 75 } }
+];
+
+// SSS级角色配置（红色）：S基础×1.3
+const SSS_ROLES = [
+  { name: '极致·华仔', pos: 'C', grade: 'SSS', attrs: { threept: 52, midshot: 65, dunk: 78, rebound: 114, block: 91, speed: 52, pass: 57, steal: 47 } }
 ];
 
 // A级角色配置（每个位置3个，共15个）
@@ -130,19 +164,15 @@ const B_ROLES = [
 ];
 
 // 全部角色列表
-const ALL_ROLES = [...S_ROLES, ...A_ROLES, ...B_ROLES];
+const ALL_ROLES = [...SSS_ROLES, ...SS_ROLES, ...S_ROLES, ...A_ROLES, ...B_ROLES];
 
 // 抽卡池配置
 const POOL_CONFIG = {
-  normal: { // 普通金币池
-    B: 67,
-    A: 30,
-    S: 3
+  normal: {
+    B: 60, A: 28, S: 9, SS: 2.5, SSS: 0.5
   },
-  premium: { // 高级钻石池
-    B: 44,
-    A: 48,
-    S: 8
+  premium: {
+    B: 35, A: 40, S: 16, SS: 7, SSS: 2
   }
 };
 
@@ -181,9 +211,11 @@ const LEAGUE_REWARDS = {
   gold:   { shard: 30, diamond: 100 }
 };
 
-// 球星碎片兑换配置（仅S级可兑换）
+// 球星碎片兑换配置
 const SHARD_EXCHANGE = {
-  S: { cost: 1000 }
+  S: { cost: 1000 },
+  SS: { cost: 2000 },
+  SSS: { cost: 5000 }
 };
 
 // PVP冷却时间（毫秒）
@@ -212,7 +244,7 @@ const MAX_DEFENSE_LOG = 20;
 // 排行榜展示人数
 const LEADERBOARD_LIMIT = 20;
 
-// 联赛梯度配置
+// 联赛梯度配置（5人阵容）
 const LEAGUE_TIERS = [
   {
     tier: 'bronze',
@@ -220,7 +252,9 @@ const LEAGUE_TIERS = [
     dailyLimit: 5,
     roster: [
       { pos: 'PG', role_name: '新手后卫', star: 2 },
+      { pos: 'SG', role_name: '投手钱', star: 2 },
       { pos: 'SF', role_name: '锋线罗', star: 2 },
+      { pos: 'PF', role_name: '蓝领龚', star: 2 },
       { pos: 'C', role_name: '新秀中锋', star: 2 }
     ]
   },
@@ -230,7 +264,9 @@ const LEAGUE_TIERS = [
     dailyLimit: 3,
     roster: [
       { pos: 'PG', role_name: '快攻王', star: 3 },
+      { pos: 'SG', role_name: '射手赵', star: 3 },
       { pos: 'SF', role_name: '全能孙', star: 3 },
+      { pos: 'PF', role_name: '铁壁刘', star: 2 },
       { pos: 'C', role_name: '中锋吴', star: 2 }
     ]
   },
@@ -240,13 +276,15 @@ const LEAGUE_TIERS = [
     dailyLimit: 2,
     roster: [
       { pos: 'PG', role_name: '阿真', star: 2 },
+      { pos: 'SG', role_name: '奶成哥', star: 2 },
       { pos: 'SF', role_name: '陶二', star: 2 },
+      { pos: 'PF', role_name: '阿晟', star: 2 },
       { pos: 'C', role_name: '华仔', star: 2 }
     ]
   }
 ];
 
-// 精英挑战赛配置：高星S固定AI强队，每日1~2次
+// 精英挑战赛配置（5人阵容）
 const ELITE_TIERS = [
   {
     tier: 'elite_1',
@@ -254,7 +292,9 @@ const ELITE_TIERS = [
     dailyLimit: 1,
     roster: [
       { pos: 'PG', role_name: '阿真', star: 3 },
+      { pos: 'SG', role_name: '奶成哥', star: 3 },
       { pos: 'SF', role_name: '陶二', star: 3 },
+      { pos: 'PF', role_name: '阿晟', star: 3 },
       { pos: 'C', role_name: '华仔', star: 3 }
     ]
   },
@@ -264,7 +304,9 @@ const ELITE_TIERS = [
     dailyLimit: 1,
     roster: [
       { pos: 'PG', role_name: '阿真', star: 2 },
+      { pos: 'SG', role_name: '奶成哥', star: 2 },
       { pos: 'SF', role_name: '小亮', star: 3 },
+      { pos: 'PF', role_name: '陶大', star: 2 },
       { pos: 'C', role_name: '华仔', star: 2 }
     ]
   }
@@ -308,11 +350,13 @@ const DRAW_COST = {
   premium: { diamond: 10 }   // 高级钻石池单抽消耗
 };
 
-// 分解奖励配置：B=30金币+10碎片, A=60金币+20碎片, S=100钻石
+// 分解奖励配置
 const DECOMPOSE_REWARD = {
   B: { gold: 30, shard: 10, diamond: 0 },
   A: { gold: 60, shard: 20, diamond: 0 },
-  S: { gold: 0, shard: 0, diamond: 100 }
+  S: { gold: 0, shard: 0, diamond: 100 },
+  SS: { gold: 0, shard: 0, diamond: 200 },
+  SSS: { gold: 0, shard: 0, diamond: 500 }
 };
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -326,6 +370,8 @@ if (typeof module !== 'undefined' && module.exports) {
     ATTR_NAMES,
     SLOT_RULES,
     S_ROLES,
+    SS_ROLES,
+    SSS_ROLES,
     A_ROLES,
     B_ROLES,
     ALL_ROLES,
@@ -344,6 +390,7 @@ if (typeof module !== 'undefined' && module.exports) {
     ACHIEVEMENTS,
     S_ROLE_NICKNAME,
     S_ROLE_IMAGE,
+    SWING_POSITIONS,
     DECOMPOSE_REWARD,
     RANK_TIERS,
     RANKED_WIN_POINTS,
