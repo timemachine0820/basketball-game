@@ -30,6 +30,8 @@
     </div>
     <div style="display:flex;gap:0.3rem;margin-bottom:0.6rem;padding:0 0.2rem;" id="exchangeRow">
       <button class="pixel-btn primary" style="flex:1;font-size:0.65rem;" onclick="openExchangeModal('S')">S级兑换<br><span style="color:#ffd700;font-size:0.55rem;">1000碎片</span></button>
+      <button class="pixel-btn" style="flex:1;font-size:0.65rem;color:#ff6d00;border-color:#ff6d00;" onclick="openExchangeModal('SS')">SS级兑换<br><span style="color:#ff6d00;font-size:0.55rem;">2000碎片</span></button>
+      <button class="pixel-btn" style="flex:1;font-size:0.65rem;color:#ff1744;border-color:#ff1744;" onclick="openExchangeModal('SSS')">SSS级兑换<br><span style="color:#ff1744;font-size:0.55rem;">5000碎片</span></button>
     </div>
 
     <!-- 位置筛选 -->
@@ -69,7 +71,6 @@
   </div>
 
   <div id="navContainer"></div>
-  <script>renderBottomNav('cards');</script>
 
   <!-- 页面底部留白，避免被导航栏遮挡 -->
   <div style="height: 4.5rem;"></div>
@@ -106,6 +107,7 @@
   <script src="../js/core/router.js"></script>
   <script src="../js/core/store.js"></script>
   <script src="../js/components/nav.js"></script>
+  <script>renderBottomNav('cards');</script>
   <script src="../js/components/modal.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
@@ -174,7 +176,11 @@
     // 应用筛选并渲染
     function applyFilter() {
       filteredCards = allCards.filter(c => {
-        if (filterPos !== 'ALL' && c.pos !== filterPos) return false;
+        if (filterPos !== 'ALL') {
+          const swing = SWING_POSITIONS[c.role_name];
+          const positions = swing || [c.pos];
+          if (!positions.includes(filterPos)) return false;
+        }
         if (filterGrade !== 'ALL' && c.grade !== filterGrade) return false;
         return true;
       });
@@ -206,7 +212,7 @@
         return `<div class="card-pixel pixel-border" style="border-color:${color};" data-uid="${c.card_uid}">
           <div class="card-pixel-top">
             <span class="grade-tag grade-${c.grade}">${c.grade}</span>
-            <span class="card-pixel-pos">${c.pos}</span>
+            <span class="card-pixel-pos">${getDisplayPos(c)}</span>
             ${c.owned ? '<span class="card-pixel-owned" style="font-size:0.5rem;color:#4caf50;">持有</span>' : ''}
           </div>
           <div class="card-pixel-name" style="color:${color};">${c.role_name}</div>
@@ -272,12 +278,12 @@
       document.getElementById('detailName').style.color = color;
       const star = card.star || 1;
       const starText = card.owned ? (' | 星级: ' + star + '/' + maxStar) : ' | 未拥有';
-      document.getElementById('detailPos').textContent = '位置: ' + card.pos + starText;
+      document.getElementById('detailPos').textContent = '位置: ' + getDisplayPos(card) + starText;
       document.getElementById('detailStars').innerHTML = card.owned ? renderStars(star) : '<span style="color:#666;">未拥有此卡牌</span>';
 
-      // S级球员图片
+      // S/SS/SSS级球员图片
       const imgEl = document.getElementById('detailImage');
-      if (card.grade === 'S' && S_ROLE_IMAGE[card.role_name]) {
+      if (['S', 'SS', 'SSS'].includes(card.grade) && S_ROLE_IMAGE[card.role_name]) {
         imgEl.innerHTML = `<img class="s-card-image" src="../assets/${S_ROLE_IMAGE[card.role_name]}" alt="${card.role_name}">`;
       } else {
         imgEl.innerHTML = '';
@@ -307,7 +313,7 @@
 
       // S角色天赋说明
       const talentEl = document.getElementById('detailTalent');
-      if (card.grade === 'S' && S_ROLE_TALENT[card.role_name]) {
+      if (['S', 'SS', 'SSS'].includes(card.grade) && S_ROLE_TALENT[card.role_name]) {
         const talentAttr = S_ROLE_TALENT[card.role_name];
         const talentVal = Math.round(finalAttrs[talentAttr] * S_TALENT_MULTIPLIER);
         const nickname = S_ROLE_NICKNAME[card.role_name] || '';
@@ -398,7 +404,7 @@
     loadData();
 
     // ===== 球星碎片兑换 =====
-    const EXCHANGE_COST = { S: 1000 };
+    const EXCHANGE_COST = { S: 1000, SS: 2000, SSS: 5000 };
 
     // 打开兑换球员选择弹窗
     function openExchangeModal(grade) {

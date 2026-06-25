@@ -7,51 +7,183 @@
   <title>巢湖篮球经理 - 出战阵容</title>
   <link rel="stylesheet" href="../css/base.css">   <link rel="stylesheet" href="../css/components.css">   <link rel="stylesheet" href="../css/layout.css">   <link rel="stylesheet" href="../css/pages.css">   <link rel="stylesheet" href="../css/animations.css">
   <style>
-    .deck-slots {
+    .court-container {
+      position: relative;
+      width: 100%;
+      max-width: 22rem;
+      margin: 0 auto 1rem;
+      aspect-ratio: 1.5 / 1;
+      background:
+        repeating-linear-gradient(90deg, rgba(180,140,80,0.08) 0px, rgba(180,140,80,0.08) 1px, transparent 1px, transparent 12px),
+        linear-gradient(180deg, #c89450 0%, #b8844a 30%, #a87844 70%, #987040 100%);
+      border: 3px solid #5a3a1a;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    /* 半场中线 */
+    .court-midline {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 2px;
+      height: 100%;
+      background: rgba(255,255,255,0.6);
+      transform: translateX(-50%);
+    }
+    /* 边线 */
+    .court-sideline-top {
+      position: absolute;
+      top: 2%;
+      left: 5%;
+      right: 5%;
+      height: 2px;
+      background: rgba(255,255,255,0.5);
+    }
+    .court-sideline-bottom {
+      position: absolute;
+      bottom: 2%;
+      left: 5%;
+      right: 5%;
+      height: 2px;
+      background: rgba(255,255,255,0.5);
+    }
+    .court-baseline {
+      position: absolute;
+      bottom: 2%;
+      left: 5%;
+      right: 5%;
+      height: 2px;
+      background: rgba(255,255,255,0.5);
+    }
+    /* 三秒区（钥匙区） */
+    .court-key {
+      position: absolute;
+      bottom: 2%;
+      left: 50%;
+      width: 32%;
+      height: 40%;
+      transform: translateX(-50%);
+      border: 2px solid rgba(255,255,255,0.6);
+      border-bottom: none;
+    }
+    /* 罚球线 */
+    .court-ft-line {
+      position: absolute;
+      bottom: 42%;
+      left: 50%;
+      width: 32%;
+      height: 2px;
+      background: rgba(255,255,255,0.6);
+      transform: translateX(-50%);
+    }
+    /* 罚球圆 */
+    .court-ft-circle {
+      position: absolute;
+      bottom: 34%;
+      left: 50%;
+      width: 22%;
+      aspect-ratio: 1;
+      transform: translateX(-50%);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+    }
+    /* 三分线 */
+    .court-threept {
+      position: absolute;
+      bottom: 2%;
+      left: 50%;
+      width: 70%;
+      height: 55%;
+      transform: translateX(-50%);
+      border: 2px solid rgba(255,255,255,0.55);
+      border-radius: 0 0 50% 50%;
+      border-top: none;
+    }
+    /* 篮筐 */
+    .court-hoop {
+      position: absolute;
+      bottom: 8%;
+      left: 50%;
+      width: 8%;
+      aspect-ratio: 1;
+      transform: translateX(-50%);
+      border: 2px solid rgba(255,100,50,0.7);
+      border-radius: 50%;
+      background: rgba(255,80,30,0.15);
+    }
+    /* 球员位置 */
+    .court-slot {
+      position: absolute;
+      width: 28%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 2;
+    }
+    .court-slot.pg { top: 18%; left: 50%; }
+    .court-slot.sg { top: 45%; left: 28%; }
+    .court-slot.sf { top: 45%; left: 72%; }
+    .court-slot.pf { top: 68%; left: 32%; }
+    .court-slot.c  { top: 68%; left: 68%; }
+    .court-slot-card {
+      border: 2px dashed rgba(106, 154, 255, 0.5);
+      border-radius: 4px;
+      background: rgba(13, 13, 26, 0.85);
+      padding: 0.3rem 0.2rem;
+      cursor: pointer;
+      min-height: 3rem;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
-      margin-bottom: 1rem;
-    }
-    .deck-slot {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.6rem;
-    }
-    .deck-slot-label {
-      width: 2.4rem;
-      text-align: center;
-      flex-shrink: 0;
-    }
-    .deck-slot-num { font-size: 0.65rem; color: #888; }
-    .deck-slot-rule { font-size: 0.6rem; color: #6a9aff; }
-    .deck-slot-card {
-      flex: 1;
-      min-height: 3.2rem;
-      display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px dashed #4a4a8a;
-      border-radius: 4px;
-      background: #0d0d1a;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .court-slot-card:active { border-color: #6a9aff; }
+    .court-slot-card.filled { border-style: solid; border-color: #4a7a2e; }
+    .court-slot-pos {
+      font-size: 0.6rem;
+      color: #6a9aff;
+      font-weight: bold;
+      margin-bottom: 0.15rem;
+    }
+    .court-slot-name {
+      font-size: 0.7rem;
+      color: #fff;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+    .court-slot-grade {
+      font-size: 0.55rem;
+      padding: 0.05rem 0.2rem;
+      border-radius: 2px;
+      margin-top: 0.1rem;
+    }
+    .court-slot-stars {
+      font-size: 0.5rem;
+      color: #ffd700;
+      margin-top: 0.1rem;
+    }
+    .court-slot-remove {
+      position: absolute;
+      top: -0.4rem;
+      right: -0.4rem;
+      width: 1.2rem;
+      height: 1.2rem;
+      background: #aa4444;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 0.7rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      padding: 0.4rem;
+      z-index: 2;
       -webkit-tap-highlight-color: transparent;
     }
-    .deck-slot-card.filled { border-style: solid; background: #12122a; }
-    .deck-slot-card-name { font-size: 0.85rem; font-weight: bold; text-align: center; }
-    .deck-slot-card-info { text-align: center; }
-    .deck-slot-card-pos { font-size: 0.6rem; color: #888; }
-    .deck-slot-card-stars { font-size: 0.6rem; color: #ffd700; }
-    .deck-slot-remove {
-      width: 1.6rem; height: 1.6rem;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; color: #888; cursor: pointer; flex-shrink: 0;
-      -webkit-tap-highlight-color: transparent;
+    .court-slot-card.filled ~ .court-slot-remove { display: flex; }
+    .court-slot-empty {
+      font-size: 0.6rem;
+      color: #666;
     }
-    .deck-slot-remove:active { color: #ff5555; }
-    .deck-empty-text { font-size: 0.7rem; color: #666; }
     .deck-action-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
     .deck-action-bar .pixel-btn { flex: 1; }
     .pixel-btn:disabled { opacity: 0.4; pointer-events: none; }
@@ -203,56 +335,49 @@
     </div>
 
     <div class="panel-title">阵容编排</div>
-    <div class="deck-slots" id="deckSlots">
-      <div class="deck-slot pixel-border">
-        <div class="deck-slot-label">
-          <div class="deck-slot-num">槽1</div>
-          <div class="deck-slot-rule">PG</div>
+    <div class="court-container" id="deckSlots">
+      <div class="court-midline"></div>
+      <div class="court-sideline-top"></div>
+      <div class="court-baseline"></div>
+      <div class="court-key"></div>
+      <div class="court-ft-line"></div>
+      <div class="court-ft-circle"></div>
+      <div class="court-threept"></div>
+      <div class="court-hoop"></div>
+      <div class="court-slot pg">
+        <div class="court-slot-card" id="slotCard1" data-slot="1">
+          <div class="court-slot-pos">PG</div>
+          <div class="court-slot-empty">点击选择</div>
         </div>
-        <div class="deck-slot-card" id="slotCard1" data-slot="1">
-          <div class="deck-slot-card-info">点击选择球员</div>
-        </div>
-        <div class="deck-slot-remove" id="slotRemove1" style="display:none;">&times;</div>
+        <div class="court-slot-remove" id="slotRemove1">&times;</div>
       </div>
-      <div class="deck-slot pixel-border">
-        <div class="deck-slot-label">
-          <div class="deck-slot-num">槽2</div>
-          <div class="deck-slot-rule">SG</div>
+      <div class="court-slot sg">
+        <div class="court-slot-card" id="slotCard2" data-slot="2">
+          <div class="court-slot-pos">SG</div>
+          <div class="court-slot-empty">点击选择</div>
         </div>
-        <div class="deck-slot-card" id="slotCard2" data-slot="2">
-          <div class="deck-slot-card-info">点击选择球员</div>
-        </div>
-        <div class="deck-slot-remove" id="slotRemove2" style="display:none;">&times;</div>
+        <div class="court-slot-remove" id="slotRemove2">&times;</div>
       </div>
-      <div class="deck-slot pixel-border">
-        <div class="deck-slot-label">
-          <div class="deck-slot-num">槽3</div>
-          <div class="deck-slot-rule">SF</div>
+      <div class="court-slot sf">
+        <div class="court-slot-card" id="slotCard3" data-slot="3">
+          <div class="court-slot-pos">SF</div>
+          <div class="court-slot-empty">点击选择</div>
         </div>
-        <div class="deck-slot-card" id="slotCard3" data-slot="3">
-          <div class="deck-slot-card-info">点击选择球员</div>
-        </div>
-        <div class="deck-slot-remove" id="slotRemove3" style="display:none;">&times;</div>
+        <div class="court-slot-remove" id="slotRemove3">&times;</div>
       </div>
-      <div class="deck-slot pixel-border">
-        <div class="deck-slot-label">
-          <div class="deck-slot-num">槽4</div>
-          <div class="deck-slot-rule">PF</div>
+      <div class="court-slot pf">
+        <div class="court-slot-card" id="slotCard4" data-slot="4">
+          <div class="court-slot-pos">PF</div>
+          <div class="court-slot-empty">点击选择</div>
         </div>
-        <div class="deck-slot-card" id="slotCard4" data-slot="4">
-          <div class="deck-slot-card-info">点击选择球员</div>
-        </div>
-        <div class="deck-slot-remove" id="slotRemove4" style="display:none;">&times;</div>
+        <div class="court-slot-remove" id="slotRemove4">&times;</div>
       </div>
-      <div class="deck-slot pixel-border">
-        <div class="deck-slot-label">
-          <div class="deck-slot-num">槽5</div>
-          <div class="deck-slot-rule">C</div>
+      <div class="court-slot c">
+        <div class="court-slot-card" id="slotCard5" data-slot="5">
+          <div class="court-slot-pos">C</div>
+          <div class="court-slot-empty">点击选择</div>
         </div>
-        <div class="deck-slot-card" id="slotCard5" data-slot="5">
-          <div class="deck-slot-card-info">点击选择球员</div>
-        </div>
-        <div class="deck-slot-remove" id="slotRemove5" style="display:none;">&times;</div>
+        <div class="court-slot-remove" id="slotRemove5">&times;</div>
       </div>
     </div>
 
@@ -264,7 +389,8 @@
     <div class="panel-title">卡牌操作</div>
     <div class="deck-action-bar">
       <button class="pixel-btn primary" id="btnOneClickUpgrade">一键合成</button>
-      <button class="pixel-btn" id="btnDecompose" style="color:#ff5252;">一键分解</button>
+      <button class="pixel-btn" id="btnDecompose" style="color:#ff5252;">手动分解</button>
+      <button class="pixel-btn" id="btnQuickDecompose" style="color:#ff9800;">分解低级</button>
     </div>
 
     <div class="owned-section">
@@ -290,7 +416,6 @@
   </div>
 
   <div id="navContainer"></div>
-  <script>renderBottomNav('lineup');</script>
   <div style="height: 4.5rem;"></div>
 
   <div class="pick-mask" id="pickMask" style="display:none;">
@@ -333,8 +458,11 @@
   </div>
 
   <div class="upgrade-mask" id="upgradeAllMask" style="display:none;">
-    <div class="upgrade-panel">
-      <div class="upgrade-title">一键合成结果</div>
+    <div class="upgrade-panel" style="max-height:80vh;overflow-y:auto;">
+      <div class="upgrade-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>一键合成结果</span>
+        <span id="btnUpgradeAllCloseX" style="cursor:pointer;font-size:1.2rem;color:#888;padding:0 0.3rem;">&times;</span>
+      </div>
       <div class="upgrade-preview" id="upgradeAllPreview"></div>
       <div class="upgrade-btn-group">
         <button class="pixel-btn primary" id="btnUpgradeAllClose">确定</button>
@@ -356,6 +484,7 @@
   <script src="../js/core/router.js"></script>
   <script src="../js/core/store.js"></script>
   <script src="../js/components/nav.js"></script>
+  <script>renderBottomNav('lineup');</script>
   <script src="../js/components/modal.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
@@ -379,7 +508,6 @@
     let decomposeSelected = new Set();
 
     const SLOT_LABEL = { 1: 'PG', 2: 'SG', 3: 'SF', 4: 'PF', 5: 'C' };
-    const SWING_POSITIONS = { '陶二': ['SG', 'SF'], '阿晟': ['PF', 'C'], '大学时期·陶二': ['SG', 'SF'], '黄毛·阿晟': ['PF', 'C'] };
     const gradeOrder = { SSS: 0, SS: 1, S: 2, A: 3, B: 4 };
 
     function canCardFitSlot(card, slot) {
@@ -426,14 +554,10 @@
           if (card) {
             const color = gradeColor(card.grade);
             cardEl.classList.add('filled');
-            cardEl.style.borderColor = color;
-            cardEl.innerHTML = `<div class="deck-slot-card-info">
-              <span class="grade-tag grade-${card.grade}">${card.grade}</span>
-              <div class="deck-slot-card-name" style="color:${color};">${card.role_name}</div>
-              <div class="deck-slot-card-pos">${card.pos}</div>
-              <div class="deck-slot-card-stars">${'★'.repeat(card.star)}</div>
-            </div>`;
-            removeEl.style.display = 'flex';
+            cardEl.innerHTML = `<div class="court-slot-pos">${getDisplayPos(card)}</div>
+              <div class="court-slot-name" style="color:${color};">${card.role_name}</div>
+              <div class="court-slot-grade grade-tag grade-${card.grade}">${card.grade}</div>
+              <div class="court-slot-stars">${'★'.repeat(card.star)}</div>`;
           } else {
             deckCards[s] = null;
             renderEmptySlot(cardEl, removeEl);
@@ -446,9 +570,10 @@
       updateTeamPower();
     }
     function renderEmptySlot(cardEl, removeEl) {
+      const posText = { 1: 'PG', 2: 'SG', 3: 'SF', 4: 'PF', 5: 'C' };
+      const pos = posText[cardEl.dataset.slot];
       cardEl.classList.remove('filled');
-      cardEl.style.borderColor = '';
-      cardEl.innerHTML = '<div class="deck-slot-card-info">点击选择球员</div>';
+      cardEl.innerHTML = `<div class="court-slot-pos">${pos}</div><div class="court-slot-empty">点击选择</div>`;
       removeEl.style.display = 'none';
     }
 
@@ -475,7 +600,7 @@
         listEl.innerHTML = candidates.map(c => {
           const color = gradeColor(c.grade);
           return `<div class="card-pixel pixel-border pick-card" style="border-color:${color};" data-uid="${c.card_uid}">
-            <div class="card-pixel-top"><span class="grade-tag grade-${c.grade}">${c.grade}</span><span class="card-pixel-pos">${c.pos}</span></div>
+            <div class="card-pixel-top"><span class="grade-tag grade-${c.grade}">${c.grade}</span><span class="card-pixel-pos">${getDisplayPos(c)}</span></div>
             <div class="card-pixel-name" style="color:${color};">${c.role_name}</div>
             <div class="card-pixel-stars">${'★'.repeat(c.star)}</div>
           </div>`;
@@ -501,7 +626,7 @@
       const body = {};
       for (let i = 1; i <= 5; i++) {
         const card = deckCards[i];
-        if (card) body[`slot${i}_card`] = card.card_uid;
+        if (card) body[`slot${i}_card`] = card;
       }
       const res = await API.post('/api/player/deck', body);
       isSaving = false;
@@ -533,7 +658,11 @@
 
     function renderOwnedCards() {
       const filtered = allCards.filter(c => {
-        if (filterPos !== 'ALL' && c.pos !== filterPos) return false;
+        if (filterPos !== 'ALL') {
+          const swing = SWING_POSITIONS[c.role_name];
+          const positions = swing || [c.pos];
+          if (!positions.includes(filterPos)) return false;
+        }
         if (filterGrade !== 'ALL' && c.grade !== filterGrade) return false;
         return true;
       });
@@ -548,7 +677,7 @@
         const color = gradeColor(c.grade);
         const selClass = decomposeMode && decomposeSelected.has(c.card_uid) ? ' decompose-selected' : '';
         return `<div class="card-pixel pixel-border owned-card${selClass}" style="border-color:${color};" data-uid="${c.card_uid}">
-          <div class="card-pixel-top"><span class="grade-tag grade-${c.grade}">${c.grade}</span><span class="card-pixel-pos">${c.pos}</span></div>
+          <div class="card-pixel-top"><span class="grade-tag grade-${c.grade}">${c.grade}</span><span class="card-pixel-pos">${getDisplayPos(c)}</span></div>
           <div class="card-pixel-name" style="color:${color};">${c.role_name}</div>
           <div class="card-pixel-stars">${'★'.repeat(c.star) + '☆'.repeat((STAR_LIMIT[c.grade] || 5) - c.star)}</div>
         </div>`;
@@ -576,7 +705,7 @@
       document.getElementById('detailGrade').textContent = card.grade;
       document.getElementById('detailName').textContent = card.role_name;
       document.getElementById('detailName').style.color = color;
-      document.getElementById('detailPos').textContent = '位置: ' + card.pos + '  |  星级: ' + card.star + '/' + maxStar;
+      document.getElementById('detailPos').textContent = '位置: ' + getDisplayPos(card) + '  |  星级: ' + card.star + '/' + maxStar;
       document.getElementById('detailStars').textContent = renderStars(card.star);
 
       if (!roleBase) {
@@ -598,7 +727,7 @@
       }).join('');
 
       const talentEl = document.getElementById('detailTalent');
-      if (card.grade === 'S' && S_ROLE_TALENT[card.role_name]) {
+      if (['S', 'SS', 'SSS'].includes(card.grade) && S_ROLE_TALENT[card.role_name]) {
         const tAttr = S_ROLE_TALENT[card.role_name];
         const tVal = Math.round(finalAttrs[tAttr] * S_TALENT_MULTIPLIER);
         const nickname = S_ROLE_NICKNAME[card.role_name] || '';
@@ -695,21 +824,33 @@
         return;
       }
       const details = res.data.details || [];
-      const preview = details.map(d => {
+      // 按角色聚合，只显示最终星级
+      const finalMap = {};
+      for (const d of details) {
+        const key = d.grade + '|' + d.role_name;
+        if (!finalMap[key]) finalMap[key] = { grade: d.grade, role_name: d.role_name, from: d.from, to: d.to };
+        else { finalMap[key].to = d.to; }
+      }
+      const results = Object.values(finalMap);
+      const preview = results.map(d => {
         const color = gradeColor(d.grade);
-        return `<div class="upgrade-card-info">
+        return `<div class="upgrade-card-info" style="justify-content:center;gap:0.4rem;">
           <span class="grade-tag grade-${d.grade}">${d.grade}</span>
-          <span style="color:${color};">${d.role_name}</span>
+          <span style="color:${color};font-weight:bold;">${d.role_name}</span>
           <span style="color:#888;">${d.from}★</span>
-          <span style="color:#ffd700;">→ ${d.to}★</span>
+          <span style="color:#ffd700;font-size:1rem;">→ ${d.to}★</span>
         </div>`;
       }).join('');
-      document.getElementById('upgradeAllPreview').innerHTML = `<div style="font-size:0.75rem;color:#ffd700;margin-bottom:0.3rem;">共合成 ${total} 次</div>` + preview;
+      document.getElementById('upgradeAllPreview').innerHTML =
+        `<div style="font-size:0.8rem;color:#ffd700;margin-bottom:0.4rem;text-align:center;">共合成 ${total} 次，${results.length} 名球员升级</div>` + preview;
       document.getElementById('upgradeAllMask').style.display = 'flex';
       await loadData();
     }, 800));
 
     document.getElementById('btnUpgradeAllClose').addEventListener('click', () => {
+      document.getElementById('upgradeAllMask').style.display = 'none';
+    });
+    document.getElementById('btnUpgradeAllCloseX').addEventListener('click', () => {
       document.getElementById('upgradeAllMask').style.display = 'none';
     });
 
@@ -722,7 +863,7 @@
         btn.style.background = '#ff5252';
         btn.style.color = '#fff';
       } else {
-        btn.textContent = '一键分解';
+        btn.textContent = '手动分解';
         btn.style.background = '';
         btn.style.color = '#ff5252';
       }
@@ -765,11 +906,11 @@
         gradeCount[c.grade] = (gradeCount[c.grade] || 0) + 1;
       }
       const parts = [];
-      if (gradeCount.B > 0) parts.push(`B×${gradeCount.B}: +${totalGold}金币 +${totalShard}碎片`);
-      else if (gradeCount.A > 0) parts.push(`A×${gradeCount.A}: +${totalGold}金币 +${totalShard}碎片`);
-      else if (gradeCount.S > 0) parts.push(`S×${gradeCount.S}: +${totalDiamond}钻石`);
+      for (const g of ['SSS', 'SS', 'S', 'A', 'B']) {
+        if (gradeCount[g] > 0) parts.push(`${g}×${gradeCount[g]}`);
+      }
       document.getElementById('decomposeReward').innerHTML =
-        `<div style="margin-bottom:0.3rem;">分解 ${selected.length} 张卡牌</div>` +
+        `<div style="margin-bottom:0.3rem;">分解 ${selected.length} 张卡牌 (${parts.join(' ')})</div>` +
         `<div style="color:#ffd700;">总计: 金币+${totalGold} | 碎片+${totalShard} | 钻石+${totalDiamond}</div>`;
       document.getElementById('decomposeMask').style.display = 'flex';
     }
@@ -787,9 +928,21 @@
       decomposeMode = false;
       decomposeSelected.clear();
       const btn = document.getElementById('btnDecompose');
-      btn.textContent = '一键分解';
+      btn.textContent = '手动分解';
       btn.style.background = '';
       btn.style.color = '#ff5252';
+      await loadData();
+    }, 800));
+
+    // 一键分解B/A级卡牌（不包含S及以上）
+    document.getElementById('btnQuickDecompose').addEventListener('click', debounce(async () => {
+      const deckUids = [deckCards[1], deckCards[2], deckCards[3], deckCards[4], deckCards[5]].filter(Boolean);
+      const lowCards = allCards.filter(c => (c.grade === 'B' || c.grade === 'A') && !deckUids.includes(c.card_uid));
+      if (lowCards.length === 0) { showToast('没有可分解的B/A级卡牌'); return; }
+      const uids = lowCards.map(c => c.card_uid);
+      const res = await API.post('/api/player/decompose', { card_uids: uids });
+      if (res.code !== 0) { showToast(res.msg || '分解失败'); return; }
+      showToast(`分解${lowCards.length}张低级卡! 金币+${res.data.gold} 碎片+${res.data.shard}`);
       await loadData();
     }, 800));
 
@@ -804,11 +957,11 @@
       const deckRes = await API.get('/api/player/deck');
       if (deckRes.code === 0) {
         const d = deckRes.data;
-        deckCards[1] = allCards.find(c => c.card_uid === d.slot1_card) || null;
-        deckCards[2] = allCards.find(c => c.card_uid === d.slot2_card) || null;
-        deckCards[3] = allCards.find(c => c.card_uid === d.slot3_card) || null;
-        deckCards[4] = allCards.find(c => c.card_uid === d.slot4_card) || null;
-        deckCards[5] = allCards.find(c => c.card_uid === d.slot5_card) || null;
+        deckCards[1] = d.slot1_card || null;
+        deckCards[2] = d.slot2_card || null;
+        deckCards[3] = d.slot3_card || null;
+        deckCards[4] = d.slot4_card || null;
+        deckCards[5] = d.slot5_card || null;
       }
       renderSlots();
       renderOwnedCards();

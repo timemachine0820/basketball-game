@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb, saveDatabase } = require('../db/database');
-const { RESOURCE_CONFIG } = require('../../config/game-config');
+const { RESOURCE_CONFIG, NEWBIE_FREE_DRAWS } = require('../../config/game-config');
 
 // 昵称字符过滤：仅允许中文、字母、数字
 function isValidInput(str) {
@@ -32,10 +32,13 @@ router.post('/register', (req, res) => {
   // 新账号创建，自动发放50抽次数
   db.run(
     "INSERT INTO players (game_id, password, nickname, gold, diamond, upgrade_shard, free_draws, total_draw, total_s, current_season) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [game_id, password, nickname, RESOURCE_CONFIG.initGold, RESOURCE_CONFIG.initDiamond, RESOURCE_CONFIG.initShard, 50, 0, 0, 1]
+    [game_id, password, nickname, RESOURCE_CONFIG.initGold, RESOURCE_CONFIG.initDiamond, RESOURCE_CONFIG.initShard, NEWBIE_FREE_DRAWS, 0, 0, 1]
   );
 
   const playerResult = db.exec("SELECT player_id, free_draws FROM players WHERE game_id = ?", [game_id]);
+  if (!playerResult.length || !playerResult[0].values.length) {
+    return res.json({ code: 1, msg: '注册失败，请重试' });
+  }
   const playerId = playerResult[0].values[0][0];
   const freeDraws = playerResult[0].values[0][1];
 

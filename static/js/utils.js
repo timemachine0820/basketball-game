@@ -37,11 +37,26 @@ function showToast(msg, duration = 2000) {
 
 // 星级显示
 function renderStars(star) {
-  return '★'.repeat(star) + '☆'.repeat(5 - star);
+  const s = Math.max(0, Math.min(5, Math.floor(star || 0)));
+  return '★'.repeat(s) + '☆'.repeat(5 - s);
 }
 
 // 品级颜色
 function gradeColor(grade) {
-  const colors = { B: '#8bc34a', A: '#2196f3', S: '#ff9800' };
+  const colors = { B: '#8bc34a', A: '#2196f3', S: '#ff9800', SS: '#ff5722', SSS: '#f44336' };
   return colors[grade] || '#fff';
+}
+
+// 球员位置显示（含摇摆位）
+function getDisplayPos(card) {
+  const swing = SWING_POSITIONS[card.role_name];
+  if (swing && swing.length > 1) return swing.join('/');
+  return card.pos;
+}
+
+// 按篮球标准位置排序：PG→SG→SF→PF→C
+const POS_ORDER = { PG: 0, SG: 1, SF: 2, PF: 3, C: 4 };
+function sortByPosition(cards) {
+  if (!cards || !cards.length) return [];
+  return [...cards].sort((a, b) => (POS_ORDER[a.pos] ?? 9) - (POS_ORDER[b.pos] ?? 9));
 }

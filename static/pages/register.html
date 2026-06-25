@@ -6,11 +6,64 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>巢湖篮球经理 - 注册</title>
   <link rel="stylesheet" href="../css/base.css">   <link rel="stylesheet" href="../css/components.css">   <link rel="stylesheet" href="../css/layout.css">   <link rel="stylesheet" href="../css/pages.css">   <link rel="stylesheet" href="../css/animations.css">
+  <style>
+    html, body { height: 100%; }
+    body {
+      background: #0d0d1a url('../assets/backgroud.jpg') center center / cover no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .auth-container {
+      width: 90%;
+      max-width: 20rem;
+      padding: 1.6rem 1.2rem;
+      background: rgba(13, 13, 26, 0.88);
+      border: 3px solid #4a4a8a;
+      border-radius: 6px;
+      box-shadow: 0 0 2rem rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .auth-logo {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 0.2rem;
+    }
+    .auth-subtitle {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #aaa;
+    }
+    .auth-divider {
+      width: 40%;
+      height: 2px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(90deg, transparent, #4a4a8a, transparent);
+    }
+    .auth-error {
+      background: rgba(180, 40, 40, 0.15);
+      border: 2px solid #aa4444;
+      border-radius: 4px;
+      color: #ff6b6b;
+      padding: 0.5rem 0.8rem;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      text-align: center;
+      animation: shake 0.3s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+  </style>
 </head>
 <body>
   <div class="auth-container">
     <div class="auth-logo">巢湖篮球经理</div>
     <div class="auth-subtitle">创建新账号</div>
+    <div class="auth-divider"></div>
 
     <form class="auth-form" id="registerForm">
       <div class="form-group">
@@ -29,6 +82,7 @@
         <label>确认密码</label>
         <input type="password" class="pixel-input" id="passwordConfirm" placeholder="再次输入密码" autocomplete="off" maxlength="20">
       </div>
+      <div class="auth-error" id="authError" style="display:none;"></div>
       <button type="submit" class="pixel-btn primary auth-btn">注 册</button>
     </form>
 
@@ -43,6 +97,16 @@
   <script src="../js/utils.js"></script>
   <script>
     const registerForm = document.getElementById('registerForm');
+    const authError = document.getElementById('authError');
+
+    function showAuthError(msg) {
+      authError.textContent = msg;
+      authError.style.display = 'block';
+      authError.style.animation = 'none';
+      authError.offsetHeight;
+      authError.style.animation = 'shake 0.3s ease';
+    }
+    function hideAuthError() { authError.style.display = 'none'; }
 
     // 软键盘适配
     document.querySelectorAll('.pixel-input').forEach(input => {
@@ -61,11 +125,11 @@
       const pwd = document.getElementById('password').value.trim();
       const pwd2 = document.getElementById('passwordConfirm').value.trim();
 
-      if (!id) return showToast('请输入游戏ID');
-      if (!nick) return showToast('请输入展示昵称');
-      if (!pwd) return showToast('请输入密码');
-      if (pwd.length < 4) return showToast('密码至少4位');
-      if (pwd !== pwd2) return showToast('两次密码不一致');
+      if (!id) return showAuthError('请输入游戏ID');
+      if (!nick) return showAuthError('请输入展示昵称');
+      if (!pwd) return showAuthError('请输入密码');
+      if (pwd.length < 4) return showAuthError('密码至少4位');
+      if (pwd !== pwd2) return showAuthError('两次密码不一致');
 
       isSubmitting = true;
       const btn = registerForm.querySelector('button[type="submit"]');
@@ -81,7 +145,7 @@
         });
 
         if (res.code !== 0) {
-          showToast(res.msg || '注册失败');
+          showAuthError(res.msg || '注册失败');
           return;
         }
 
@@ -93,7 +157,7 @@
         showToast('注册成功，赠送50抽');
         setTimeout(() => { window.location.href = 'home.html'; }, 800);
       } catch (err) {
-        showToast('网络异常，请重试');
+        showAuthError('网络异常，请重试');
       } finally {
         isSubmitting = false;
         btn.textContent = originText;

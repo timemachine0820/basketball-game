@@ -176,12 +176,10 @@ router.get('/opponents', authCheck, (req, res) => {
     ? seasonResult[0].values[0][0] : 0;
   const myRank = getRankTier(myPoints);
 
-  // 读取今日PVP剩余次数
-  const dailyUsed = getPvpDailyCount(db, req.playerId);
-  const dailyRemaining = Math.max(0, RESOURCE_CONFIG.pvpDailyLimit - dailyUsed);
-
-  const rankedUsed = getPvpDailyCount(db, req.playerId);
-  const rankedRemaining = Math.max(0, RESOURCE_CONFIG.pvpDailyLimit - rankedUsed);
+  // 读取今日PVP剩余次数（休闲/排位共享次数）
+  const pvpUsed = getPvpDailyCount(db, req.playerId);
+  const dailyRemaining = Math.max(0, RESOURCE_CONFIG.pvpDailyLimit - pvpUsed);
+  const rankedRemaining = dailyRemaining;
 
   res.json({
     code: 0,

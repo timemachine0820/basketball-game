@@ -26,7 +26,7 @@ function trySettleDailyMVP() {
   const todayMs = todayStart.getTime();
   const winResult = db.exec(
     `SELECT attacker_id, COUNT(*) as win_count FROM match_records
-     WHERE match_type = 'pvp' AND win_id = attacker_id AND create_time >= ?
+     WHERE match_type IN ('pvp_ranked', 'pvp_casual') AND win_id = attacker_id AND create_time >= ?
      GROUP BY attacker_id ORDER BY win_count DESC LIMIT 1`,
     [todayMs]
   );
@@ -71,6 +71,12 @@ async function start() {
   // 根路径重定向到登录页
   app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'static', 'pages', 'index.html'));
+  });
+
+  // 全局错误处理中间件
+  app.use((err, req, res, next) => {
+    console.error('服务器错误:', err);
+    res.status(500).json({ code: 1, msg: '服务器内部错误' });
   });
 
   app.listen(PORT, () => {

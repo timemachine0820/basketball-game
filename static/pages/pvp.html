@@ -641,7 +641,6 @@
   </div>
 
   <div id="navContainer"></div>
-  <script>renderBottomNav('pvp');</script>
 
   <div style="height: 4.5rem;"></div>
 
@@ -670,6 +669,7 @@
   <script src="../js/core/router.js"></script>
   <script src="../js/core/store.js"></script>
   <script src="../js/components/nav.js"></script>
+  <script>renderBottomNav('pvp');</script>
   <script src="../js/components/modal.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
@@ -720,8 +720,8 @@
         showToast(data.mode === 'ranked' ? (data.isWin ? `+${data.pointChange}排位分` : `${data.pointChange}排位分`) : '');
       }
 
-      document.getElementById('myStatsBody').innerHTML = data.myCards.map(renderStatsRow).join('');
-      document.getElementById('defStatsBody').innerHTML = data.oppCards.map(renderStatsRow).join('');
+      document.getElementById('myStatsBody').innerHTML = sortByPosition(data.myCards).map(renderStatsRow).join('');
+      document.getElementById('defStatsBody').innerHTML = sortByPosition(data.oppCards).map(renderStatsRow).join('');
       document.getElementById('resultMask').style.display = 'flex';
     }
 
@@ -795,6 +795,10 @@
 
     // 加载页面数据
     async function loadPage() {
+      if (!localStorage.getItem('player_id')) {
+        window.location.href = 'index.html';
+        return;
+      }
       const infoRes = await API.get('/api/player/info');
       if (infoRes.code === 0) {
         document.getElementById('nicknameDisplay').textContent = infoRes.data.nickname;
@@ -817,7 +821,7 @@
       const uids = [deck.slot1_card, deck.slot2_card, deck.slot3_card, deck.slot4_card, deck.slot5_card];
       const myCards = uids.map(uid => allCards.find(c => c.card_uid === uid)).filter(Boolean);
 
-      if (myCards.length !== 3) {
+      if (myCards.length !== 5) {
         document.getElementById('myTeamCards').innerHTML = '<div class="empty-hint">阵容数据异常</div>';
         return;
       }
@@ -836,7 +840,7 @@
         return `<div class="battle-player-item" style="border-color:${color};">
           <span class="grade-tag grade-${c.grade}">${c.grade}</span>
           <span class="battle-player-name" style="color:${color};">${c.role_name}</span>
-          <span class="battle-player-pos">${c.pos}</span>
+          <span class="battle-player-pos">${getDisplayPos(c)}</span>
           <span class="battle-player-stars">${'★'.repeat(c.star)}</span>
         </div>`;
       }).join('');
@@ -964,7 +968,7 @@
         showToast('PVP冷却中，请稍后再试');
         return;
       }
-
+      try {
       const res = await API.post('/api/pvp/battle', { target_player_id: targetId, mode: currentMode });
       if (res.code !== 0) {
         showToast(res.msg || '挑战失败');
@@ -993,13 +997,14 @@
         updatedPoints: data.updatedPoints,
         updatedDiamond: data.updatedDiamond
       });
+      } catch (e) { showToast('请求失败，请重试'); }
     }
 
     function renderStatsRow(player) {
       const color = gradeColor(player.grade);
       return `<tr>
         <td class="player-name-cell" style="color:${color};">${player.name}</td>
-        <td>${player.pos}</td>
+        <td>${getDisplayPos(player)}</td>
         <td>${player.score}</td>
         <td>${player.rebound}</td>
         <td>${player.assist}</td>
@@ -1019,7 +1024,7 @@
       cards.forEach(c => {
         const roleBase = ALL_ROLES.find(r => r.name === c.role_name);
         if (!roleBase) return;
-        const growth = { B: 4, A: 6, S: 8 }[c.grade] * (c.star - 1);
+        const growth = { B: 4, A: 6, S: 8, SS: 10, SSS: 12 }[c.grade] * (c.star - 1);
         const sum = Object.keys(roleBase.attrs).reduce((s, k) => s + Math.min((roleBase.attrs[k] || 0) + growth, 100), 0);
         const avg = sum / Object.keys(roleBase.attrs).length;
         total += Math.round(avg * 10);
@@ -1101,13 +1106,13 @@
         // 球员比赛数据表格
         let statsHtml = '';
         if (log.player_stats && log.player_stats.length > 0) {
-          const attackers = log.player_stats.filter(p => p.side === 'attacker');
-          const defenders = log.player_stats.filter(p => p.side === 'defender');
+          const attackers = sortByPosition(log.player_stats.filter(p => p.side === 'attacker'));
+          const defenders = sortByPosition(log.player_stats.filter(p => p.side === 'defender'));
           const renderStatRows = (players) => players.map(p => {
             const color = gradeColor(p.grade);
             return `<tr>
               <td class="player-name-cell" style="color:${color};">${p.name}</td>
-              <td>${p.pos}</td>
+              <td>${getDisplayPos(p)}</td>
               <td>${p.score}</td>
               <td>${p.rebound}</td>
               <td>${p.assist}</td>

@@ -104,9 +104,17 @@
         <div class="stat-value" id="valTotalDraw">--</div>
         <div class="stat-label">总抽卡数</div>
       </div>
-      <div class="stat-item pixel-border">
-        <div class="stat-value grade-S" id="valTotalS">--</div>
+      <div class="stat-item pixel-border stat-s">
+        <div class="stat-value" id="valTotalS">--</div>
         <div class="stat-label">S卡出货</div>
+      </div>
+      <div class="stat-item pixel-border stat-ss">
+        <div class="stat-value" id="valTotalSs">--</div>
+        <div class="stat-label">SS卡出货</div>
+      </div>
+      <div class="stat-item pixel-border stat-sss">
+        <div class="stat-value" id="valTotalSss">--</div>
+        <div class="stat-label">SSS卡出货</div>
       </div>
       <div class="stat-item pixel-border">
         <div class="stat-value" id="valFreeDraws">--</div>
@@ -117,7 +125,6 @@
   </div>
 
   <div id="navContainer"></div>
-  <script>renderBottomNav('home');</script>
 
   <!-- 页面底部留白，避免被导航栏遮挡 -->
   <div style="height: 4.5rem;"></div>
@@ -128,6 +135,7 @@
   <script src="../js/components/modal.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
+  <script>renderBottomNav('home');</script>
   <script>
     // 未登录校验
     if (!localStorage.getItem('player_id')) {
@@ -188,6 +196,8 @@
 
       document.getElementById('valTotalDraw').textContent = formatNumber(data.total_draw);
       document.getElementById('valTotalS').textContent = data.total_s;
+      document.getElementById('valTotalSs').textContent = data.total_ss || 0;
+      document.getElementById('valTotalSss').textContent = data.total_sss || 0;
       document.getElementById('valFreeDraws').textContent = data.free_draws;
 
       generateAvatar(data.nickname);

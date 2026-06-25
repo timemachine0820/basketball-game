@@ -107,6 +107,13 @@ function createTables() {
       FOREIGN KEY (player_id) REFERENCES players(player_id)
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS config_overrides (
+      config_key TEXT PRIMARY KEY,
+      config_value TEXT NOT NULL
+    )
+  `);
 }
 
 function createLeagueTables() {
@@ -157,14 +164,13 @@ function createLeagueTables() {
   }
 }
 
-// 初始化联赛+精英预设AI队伍（幂等：跳过已存在的tier）
+// 初始化联赛+精英预设AI队伍（5人阵容，总是用最新配置覆盖）
 function initLeagueAITeams() {
   const existing = db.exec("SELECT tier FROM league_ai_teams");
   const existingTiers = existing.length > 0 ? existing[0].values.map(r => r[0]) : [];
 
   const allTiers = [...LEAGUE_TIERS, ...ELITE_TIERS];
   for (const tier of allTiers) {
-    if (existingTiers.includes(tier.tier)) continue;
     const roster = tier.roster.map(r => {
       const roleData = ALL_ROLES.find(role => role.name === r.role_name);
       return {
@@ -174,10 +180,18 @@ function initLeagueAITeams() {
         star: r.star
       };
     });
-    db.run(
-      "INSERT INTO league_ai_teams (tier, team_name, roster_json) VALUES (?, ?, ?)",
-      [tier.tier, tier.label, JSON.stringify(roster)]
-    );
+    if (existingTiers.includes(tier.tier)) {
+      // 更新已存在的tier阵容（确保从3人升级到5人）
+      db.run(
+        "UPDATE league_ai_teams SET team_name = ?, roster_json = ? WHERE tier = ?",
+        [tier.label, JSON.stringify(roster), tier.tier]
+      );
+    } else {
+      db.run(
+        "INSERT INTO league_ai_teams (tier, team_name, roster_json) VALUES (?, ?, ?)",
+        [tier.tier, tier.label, JSON.stringify(roster)]
+      );
+    }
   }
 }
 
@@ -206,6 +220,32 @@ function migrateTable() {
   if (!hasSignature) {
     db.run("ALTER TABLE players ADD COLUMN signature TEXT DEFAULT ''");
   }
+
+  // SS/SSS级卡牌统计
+  const hasTotalSs = cols.length > 0 && cols[0].values.some(r => r[1] === 'total_ss');
+  if (!hasTotalSs) {
+    db.run("ALTER TABLE players ADD COLUMN total_ss INTEGER DEFAULT 0");
+  }
+  const hasTotalSss = cols.length > 0 && cols[0].values.some(r => r[1] === 'total_sss');
+  if (!hasTotalSss) {
+    db.run("ALTER TABLE players ADD COLUMN total_sss INTEGER DEFAULT 0");
+  }
+
+  // 回填历史SS/SSS统计数据（从player_cards表重新统计）
+  try {
+    const ssResult = db.exec("SELECT player_id, COUNT(*) as cnt FROM player_cards WHERE grade = 'SS' GROUP BY player_id");
+    if (ssResult.length > 0) {
+      ssResult[0].values.forEach(([pid, cnt]) => {
+        db.run("UPDATE players SET total_ss = ? WHERE player_id = ?", [cnt, pid]);
+      });
+    }
+    const sssResult = db.exec("SELECT player_id, COUNT(*) as cnt FROM player_cards WHERE grade = 'SSS' GROUP BY player_id");
+    if (sssResult.length > 0) {
+      sssResult[0].values.forEach(([pid, cnt]) => {
+        db.run("UPDATE players SET total_sss = ? WHERE player_id = ?", [cnt, pid]);
+      });
+    }
+  } catch (e) { /* player_cards表可能还不存在 */ }
 
   // 5人阵容：补充slot4、slot5列
   const deckCols = db.exec("PRAGMA table_info(team_deck)");

@@ -354,9 +354,9 @@ const DRAW_COST = {
 const DECOMPOSE_REWARD = {
   B: { gold: 30, shard: 10, diamond: 0 },
   A: { gold: 60, shard: 20, diamond: 0 },
-  S: { gold: 0, shard: 0, diamond: 100 },
-  SS: { gold: 0, shard: 0, diamond: 200 },
-  SSS: { gold: 0, shard: 0, diamond: 500 }
+  S: { gold: 50, shard: 100, diamond: 150 },
+  SS: { gold: 100, shard: 250, diamond: 350 },
+  SSS: { gold: 200, shard: 500, diamond: 800 }
 };
 
 if (typeof module !== 'undefined' && module.exports) {

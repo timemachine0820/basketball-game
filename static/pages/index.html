@@ -41,6 +41,22 @@
       margin: 0 auto 1.5rem;
       background: linear-gradient(90deg, transparent, #4a4a8a, transparent);
     }
+    .auth-error {
+      background: rgba(180, 40, 40, 0.15);
+      border: 2px solid #aa4444;
+      border-radius: 4px;
+      color: #ff6b6b;
+      padding: 0.5rem 0.8rem;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      text-align: center;
+      animation: shake 0.3s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
   </style>
 </head>
 <body>
@@ -58,6 +74,7 @@
         <label>密码</label>
         <input type="password" class="pixel-input" id="password" placeholder="请输入密码" autocomplete="off" maxlength="20">
       </div>
+      <div class="auth-error" id="authError" style="display:none;"></div>
       <button type="submit" class="pixel-btn primary auth-btn">登 录</button>
     </form>
 
@@ -79,6 +96,16 @@
     const loginForm = document.getElementById('loginForm');
     const gameId = document.getElementById('gameId');
     const password = document.getElementById('password');
+    const authError = document.getElementById('authError');
+
+    function showAuthError(msg) {
+      authError.textContent = msg;
+      authError.style.display = 'block';
+      authError.style.animation = 'none';
+      authError.offsetHeight;
+      authError.style.animation = 'shake 0.3s ease';
+    }
+    function hideAuthError() { authError.style.display = 'none'; }
 
     // 输入框适配软键盘
     gameId.addEventListener('focus', () => {
@@ -96,8 +123,8 @@
       const id = gameId.value.trim();
       const pwd = password.value.trim();
 
-      if (!id) return showToast('请输入游戏ID');
-      if (!pwd) return showToast('请输入密码');
+      if (!id) return showAuthError('请输入游戏ID');
+      if (!pwd) return showAuthError('请输入密码');
 
       isSubmitting = true;
       const btn = loginForm.querySelector('button[type="submit"]');
@@ -108,7 +135,7 @@
       try {
         const res = await API.post('/api/auth/login', { game_id: id, password: pwd });
         if (res.code !== 0) {
-          showToast(res.msg || '登录失败');
+          showAuthError(res.msg || '登录失败');
           return;
         }
 
@@ -120,7 +147,7 @@
         showToast('登录成功');
         setTimeout(() => { window.location.href = 'home.html'; }, 500);
       } catch (err) {
-        showToast('网络异常，请重试');
+        showAuthError('网络异常，请重试');
       } finally {
         isSubmitting = false;
         btn.textContent = originText;

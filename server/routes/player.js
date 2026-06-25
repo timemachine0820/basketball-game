@@ -24,7 +24,7 @@ function authCheck(req, res, next) {
 router.get('/info', authCheck, (req, res) => {
   const db = getDb();
   const result = db.exec(
-    "SELECT game_id, nickname, gold, diamond, upgrade_shard, free_draws, total_draw, total_s, current_season FROM players WHERE player_id = ?",
+    "SELECT game_id, nickname, gold, diamond, upgrade_shard, free_draws, total_draw, total_s, current_season, total_ss, total_sss FROM players WHERE player_id = ?",
     [req.playerId]
   );
 
@@ -61,6 +61,8 @@ router.get('/info', authCheck, (req, res) => {
       total_draw: row[6],
       total_s: row[7],
       current_season: row[8],
+      total_ss: row[9] || 0,
+      total_sss: row[10] || 0,
       deck
     }
   });
@@ -113,8 +115,9 @@ router.get('/deck', authCheck, (req, res) => {
       const cardsAttrs = cardResult[0].values.map(r => {
         const cardInfo = { pos: r[1], grade: r[2], role_name: r[3], star: r[4] };
         const roleData = ALL_ROLES.find(rd => rd.name === r[3] && rd.grade === r[2]);
+        if (!roleData) return null;
         return calcPlayerAttrs(cardInfo, roleData);
-      });
+      }).filter(Boolean);
       const { calcTeamPower } = require('../battle-engine');
       power = calcTeamPower(cardsAttrs);
     }
@@ -251,7 +254,7 @@ router.post('/draw', authCheck, (req, res) => {
 
   // 读取玩家资源
   const result = db.exec(
-    "SELECT gold, diamond, free_draws, pity_count, total_draw, total_s FROM players WHERE player_id = ?",
+    "SELECT gold, diamond, free_draws, pity_count, total_draw, total_s, total_ss, total_sss FROM players WHERE player_id = ?",
     [req.playerId]
   );
   if (result.length === 0 || result[0].values.length === 0) {
@@ -261,6 +264,7 @@ router.post('/draw', authCheck, (req, res) => {
   const row = result[0].values[0];
   let gold = row[0], diamond = row[1], freeDraws = row[2];
   let pityCount = row[3], totalDraw = row[4], totalS = row[5];
+  let totalSs = row[6] || 0, totalSss = row[7] || 0;
 
   // 先扣免费次数，剩余用对应资源
   const freeUsed = Math.min(freeDraws, count);
@@ -287,7 +291,7 @@ router.post('/draw', authCheck, (req, res) => {
 
     const poolRates = POOL_CONFIG[pool];
     const drawnCards = [];
-    let sCount = 0;
+    let sCount = 0, ssCount = 0, sssCount = 0;
 
     for (let i = 0; i < count; i++) {
       // 计算安慰保底加成
@@ -299,24 +303,26 @@ router.post('/draw', authCheck, (req, res) => {
       }
 
       // 按概率判定品级
+      const ssRate = poolRates.SS || 0;
+      const sssRate = poolRates.SSS || 0;
       const sRate = Math.min(poolRates.S + pityBonus, 100);
       const aRate = poolRates.A;
-      const bRate = Math.max(0, 100 - sRate - aRate);
+      const bRate = Math.max(0, 100 - sRate - aRate - ssRate - sssRate);
 
       const roll = Math.random() * 100;
       let grade;
-      if (roll < sRate) {
-        grade = 'S';
-      } else if (roll < sRate + aRate) {
-        grade = 'A';
-      } else {
-        grade = 'B';
-      }
+      if (roll < sssRate) { grade = 'SSS'; }
+      else if (roll < sssRate + ssRate) { grade = 'SS'; }
+      else if (roll < sssRate + ssRate + sRate) { grade = 'S'; }
+      else if (roll < sssRate + ssRate + sRate + aRate) { grade = 'A'; }
+      else { grade = 'B'; }
 
       // 更新保底计数
-      if (grade === 'S') {
+      if (grade === 'S' || grade === 'SS' || grade === 'SSS') {
         pityCount = 0;
         sCount++;
+        if (grade === 'SS') ssCount++;
+        if (grade === 'SSS') sssCount++;
       } else {
         pityCount++;
       }
@@ -345,9 +351,11 @@ router.post('/draw', authCheck, (req, res) => {
     // 更新统计 + 保底计数
     totalDraw += count;
     totalS += sCount;
+    totalSs += ssCount;
+    totalSss += sssCount;
     db.run(
-      "UPDATE players SET pity_count = ?, total_draw = ?, total_s = ? WHERE player_id = ?",
-      [pityCount, totalDraw, totalS, req.playerId]
+      "UPDATE players SET pity_count = ?, total_draw = ?, total_s = ?, total_ss = ?, total_sss = ? WHERE player_id = ?",
+      [pityCount, totalDraw, totalS, totalSs, totalSss, req.playerId]
     );
 
     saveDatabase();
@@ -367,7 +375,9 @@ router.post('/draw', authCheck, (req, res) => {
           free_draws: freeDraws - freeUsed
         },
         total_draw: totalDraw,
-        total_s: totalS
+        total_s: totalS,
+        total_ss: totalSs,
+        total_sss: totalSss
       }
     });
   } catch (err) {

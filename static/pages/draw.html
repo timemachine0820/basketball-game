@@ -57,9 +57,17 @@
         <div class="stat-value" id="valTotalDraw">--</div>
         <div class="stat-label">总抽卡数</div>
       </div>
-      <div class="stat-item pixel-border">
-        <div class="stat-value grade-S" id="valTotalS">--</div>
+      <div class="stat-item pixel-border stat-s">
+        <div class="stat-value" id="valTotalS">--</div>
         <div class="stat-label">S卡出货</div>
+      </div>
+      <div class="stat-item pixel-border stat-ss">
+        <div class="stat-value" id="valTotalSs">--</div>
+        <div class="stat-label">SS卡出货</div>
+      </div>
+      <div class="stat-item pixel-border stat-sss">
+        <div class="stat-value" id="valTotalSss">--</div>
+        <div class="stat-label">SSS卡出货</div>
       </div>
       <div class="stat-item pixel-border">
         <div class="stat-value" id="valPityCount">--</div>
@@ -76,13 +84,13 @@
   </div>
 
   <div id="navContainer"></div>
-  <script>renderBottomNav('draw');</script>
 
   <div style="height: 4.5rem;"></div>
 
   <script src="../js/core/router.js"></script>
   <script src="../js/core/store.js"></script>
   <script src="../js/components/nav.js"></script>
+  <script>renderBottomNav('draw');</script>
   <script src="../js/components/modal.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
@@ -133,6 +141,14 @@
       localStorage.setItem('draw_history', JSON.stringify(list.slice(-10)));
     }
 
+    // 根据品级返回闪光CSS类
+    function getFlashClass(grade) {
+      if (grade === 'SSS') return ' draw-sss-flash';
+      if (grade === 'SS') return ' draw-ss-flash';
+      if (grade === 'S') return ' draw-s-flash';
+      return '';
+    }
+
     // 渲染近10抽记录
     function renderHistory() {
       const list = getDrawHistory();
@@ -144,8 +160,8 @@
       // 倒序展示（最新在前）
       el.innerHTML = list.slice().reverse().map(item => {
         const color = gradeColor(item.grade);
-        const sClass = item.grade === 'S' ? ' draw-s-flash' : '';
-        return `<div class="draw-history-item pixel-border${sClass}">
+        const flashCls = getFlashClass(item.grade);
+        return `<div class="draw-history-item pixel-border${flashCls}">
           <span class="grade-tag grade-${item.grade}">${item.grade}</span>
           <span style="color:${color};margin-left:0.4rem;">${item.role_name}</span>
           <span style="color:#888;margin-left:auto;font-size:0.65rem;">${item.pos}</span>
@@ -164,8 +180,8 @@
       el.style.display = 'block';
       list.innerHTML = cards.map(c => {
         const color = gradeColor(c.grade);
-        const sClass = c.grade === 'S' ? ' draw-s-flash' : '';
-        return `<div class="draw-result-card pixel-border${sClass}">
+        const flashCls = getFlashClass(c.grade);
+        return `<div class="draw-result-card pixel-border${flashCls}">
           <span class="grade-tag grade-${c.grade}">${c.grade}</span>
           <span style="color:${color};font-weight:bold;margin-left:0.4rem;">${c.role_name}</span>
           <span style="color:#888;font-size:0.7rem;margin-left:auto;">${c.pos} ★${c.star}</span>
@@ -174,9 +190,11 @@
     }
 
     // 更新统计显示
-    function updateStats(totalDraw, totalS, pityCount) {
+    function updateStats(totalDraw, totalS, pityCount, totalSs, totalSss) {
       document.getElementById('valTotalDraw').textContent = formatNumber(totalDraw);
       document.getElementById('valTotalS').textContent = totalS;
+      document.getElementById('valTotalSs').textContent = totalSs || 0;
+      document.getElementById('valTotalSss').textContent = totalSss || 0;
       document.getElementById('valPityCount').textContent = pityCount != null ? pityCount : '--';
     }
 
@@ -199,7 +217,7 @@
         return;
       }
 
-      const { cards, remaining, total_draw, total_s } = res.data;
+      const { cards, remaining, total_draw, total_s, total_ss, total_sss } = res.data;
 
       // 渲染结果
       renderResults(cards);
@@ -209,9 +227,11 @@
       localStorage.setItem('free_draws', remaining.free_draws);
 
       // 更新统计
-      updateStats(total_draw, total_s, null);
+      updateStats(total_draw, total_s, null, total_ss, total_sss);
       localStorage.setItem('total_draw', total_draw);
       localStorage.setItem('total_s', total_s);
+      localStorage.setItem('total_ss', total_ss);
+      localStorage.setItem('total_sss', total_sss);
 
       // 追加记录到localStorage（近10抽）
       const history = getDrawHistory();
@@ -243,10 +263,12 @@
       }
       document.getElementById('nicknameDisplay').textContent = res.data.nickname;
       updateResources(res.data);
-      updateStats(res.data.total_draw, res.data.total_s, null);
+      updateStats(res.data.total_draw, res.data.total_s, null, res.data.total_ss, res.data.total_sss);
       localStorage.setItem('free_draws', res.data.free_draws);
       localStorage.setItem('total_draw', res.data.total_draw);
       localStorage.setItem('total_s', res.data.total_s);
+      localStorage.setItem('total_ss', res.data.total_ss || 0);
+      localStorage.setItem('total_sss', res.data.total_sss || 0);
       renderHistory();
     }
 

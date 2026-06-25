@@ -113,25 +113,48 @@
 /* 抽卡统计面板 */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
 }
 
 .stat-item {
   text-align: center;
-  padding: 0.8rem 0.3rem;
+  padding: 0.6rem 0.2rem;
 }
 
 .stat-value {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   color: #fff;
   font-weight: bold;
 }
 
 .stat-label {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   color: #888;
-  margin-top: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+/* S/SS/SSS统计项特殊样式 */
+.stat-s {
+  border-color: #ff9800 !important;
+}
+.stat-s .stat-value {
+  color: #ff9800;
+  text-shadow: 0 0 6px rgba(255, 152, 0, 0.5);
+}
+.stat-ss {
+  border-color: #ff6d00 !important;
+}
+.stat-ss .stat-value {
+  color: #ff6d00;
+  text-shadow: 0 0 6px rgba(255, 109, 0, 0.5);
+}
+.stat-sss {
+  border-color: #ff1744 !important;
+}
+.stat-sss .stat-value {
+  color: #ff1744;
+  text-shadow: 0 0 6px rgba(255, 23, 68, 0.5);
 }
 
 /* ========== 抽卡页面样式 ========== */
